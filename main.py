@@ -1,4 +1,5 @@
 import openai
+import os
 
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session
@@ -6,14 +7,14 @@ from flask import Flask, flash, redirect, render_template, request, session
 from helpers import apology
 
 # Setup OpenAI env
-openai.api_key = "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"
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 openai.Model.list()
 
 # Configure application
 app = Flask(__name__)
 
 # Configure CS50 Library to use SQLite database
-db = SQL("sqlite:///project.db")
+#db = SQL("sqlite:///project.db")
 
 
 @app.after_request
