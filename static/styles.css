@@ -1,0 +1,81 @@
+/* Size for brand */
+nav .navbar-brand
+{
+    font-size: xx-large;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight:700;
+    font-style:normal;
+}
+
+/* Colors for brand */
+nav .navbar-brand .green
+{
+    color: #459f09;
+}
+
+
+
+table {
+    background-color: transparent;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+table th,
+table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+body {
+    background-color: #fff;
+    color: #212529;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    margin: 0;
+    text-align: left;
+}
+
+.btn {
+    background-color: #459f09;
+    border: none;
+    color: #fff;
+}
+
+.btn:hover {
+    background-color: #2d6806;
+    transition: color 2s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.container {
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px;
+    padding-right: 15px;
+    text-align: center;
+    width: 90%;
+}
+
+.header {
+    background-color: #459f09;
+    color: #fff;
+    margin-bottom: 2rem;
+    padding: 2rem 1rem;
+    text-align: center;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight:600;
+    font-style:normal;
+}
+
+.section {
+    padding-bottom: 1rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-top: 0.5rem;
+}
+
+.section:hover {
+    background-color: #f5f5f5;
+    transition: color 2s ease-in-out, background-color 0.15s ease-in-out;
+}

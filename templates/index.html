@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Welcome
+{% endblock %}
+
+{% block main %}
+<div class="header">
+    <h1>Welcome to Cicero</h1>
+</div>
+<div class="container" style="background-image: url('static/cicero_white.png'); background-repeat: no-repeat; background-size: 25%;">
+        This is Cicero, your powerful new travel companion!<br>
+        Cicero knows a lot about the world, and he wants to help you make the most out of your next holiday.<br>
+        <br>
+        Have you ever booked a trip to an awesome destination, visited some popular places...<br>
+        But then felt that, if only you spent some more time researching...<br>
+        You could've done and seen much more?<br>
+        <br>
+        Then start planning with Cicero straight away!<br>
+        <form action="/generate" method="GET">
+            <br><button class="btn btn-primary" type="redirect">Generate a new travel plan</button>
+        </form> 
+        <br><br><br>   
+</div>
+
+{% endblock %}

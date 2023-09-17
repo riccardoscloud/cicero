@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Travel plan generator
+{% endblock %}
+
+{% block main %}
+<div class="header">
+    <h1>Tell Cicero about your trip</h1>
+</div>
+<div class="container">
+    <form action="/generate" method="POST">
+        <div class="input-group mb-3">
+            <span class="input-group-text vw-100">Your destination(s)</span>
+            <input autocomplete="off" autofocus class="form-control vw-100" id="destination" name="destination" placeholder="One or more..." type="text">
+        </div>
+        <div class="input-group mb-3 w-auto">
+            <span class="w-50">
+                <span class="input-group-text">Month</span>
+                <select class="form-select" aria-label="Month" id="month" name="month">
+                    {% for month in months %}
+                        <option value="{{ month }}">{{ month }}</option>
+                    {% endfor %}
+                </select>
+            </span>
+            <span class="w-50">
+                <span class="input-group-text">Duration</span>
+                <select class="form-select" aria-label="Duration" id="duration" name="duration">
+                    {% for weeks in duration %}
+                        <option value="{{ weeks }}">{{ weeks }}</option>
+                    {% endfor %}
+                </select>
+            </span>
+        </div>
+        <div class="input-group mb-3">
+            <span class="input-group-text vw-100">Your interests</span>
+            <div class="form-control vw-100">
+                {% for interest in interests %}
+                <span class="text-nowrap">
+                    <input class="form-check-input ms-4 me-1" name="interests" type="checkbox" value="{{ interest }}" aria-label="Checkbox for {{ interest}}" > {{ interest }}
+                </span>
+                {% endfor %}
+            </div>
+          </div>
+        <br>
+        <button class="btn btn-primary" type="submit">Submit</button>
+    </form>
+</div>
+
+{% endblock %}
