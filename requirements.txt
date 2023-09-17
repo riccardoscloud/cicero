@@ -2,3 +2,8 @@ cs50
 Flask
 requests
 openai
+
+Flask-Login
+requests
+oauthlib
+pyOpenSSL

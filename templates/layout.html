@@ -33,10 +33,22 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbar">
+                    {% if current_user.is_authenticated %}
+                        <ul class="navbar-nav me-auto mt-2">
+                            <li class="nav-item"><a class="nav-link" href="/generate">Generate a travel plan</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/faq">FAQs</a></li>
+                        </ul>
+                        <ul class="navbar-nav ms-auto mt-2">
+                            <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
+                        </ul>
+                    {% else %}
                     <ul class="navbar-nav me-auto mt-2">
-                        <li class="nav-item"><a class="nav-link" href="/generate">Generate a travel plan</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/faq">FAQs</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/faq">FAQ</a></li>
                     </ul>
+                        <ul class="navbar-nav ms-auto mt-2">
+                            <li class="nav-item"><a class="nav-link" href="/login">Log In with Google</a></li>
+                        </ul>
+                    {% endif %}
                 </div>
             </div>
         </nav>
@@ -54,8 +66,6 @@
         </main>
 
         <footer class="mb-5 small text-center text-muted">
-            Harvard CS50X 2023 - Final Project
-            <br>
             Created by Riccardo @ <a href="https://riccardoscloud.com/" target="_blank">Riccardo's Cloud</a>
         </footer>
 
