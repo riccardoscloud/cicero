@@ -1,6 +1,7 @@
 from flask_login import UserMixin
+from cs50 import SQL
 
-from db import get_db
+db = SQL("sqlite:///database.db")
 
 class User(UserMixin):
     def __init__(self, id_, name, email, profile_pic):
@@ -11,24 +12,21 @@ class User(UserMixin):
 
     @staticmethod
     def get(user_id):
-        db = get_db()
-        user = db.execute(
+        rows = db.execute(
             "SELECT * FROM user WHERE id = ?", (user_id,)
-        ).fetchone()
-        if not user:
+        )
+        if len(rows) != 1:
             return None
 
         user = User(
-            id_=user[0], name=user[1], email=user[2], profile_pic=user[3]
+            id_=rows[0][0], name=rows[0][1], email=rows[0][2], profile_pic=rows[0][3]
         )
         return user
 
     @staticmethod
     def create(id_, name, email, profile_pic):
-        db = get_db()
         db.execute(
             "INSERT INTO user (id, name, email, profile_pic) "
             "VALUES (?, ?, ?, ?)",
-            (id_, name, email, profile_pic),
+            id_, name, email, profile_pic,
         )
-        db.commit()

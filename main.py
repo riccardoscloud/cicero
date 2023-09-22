@@ -1,15 +1,14 @@
 import openai
 import os
 import json
-import sqlite3
 import requests
 
+from cs50 import SQL
 from flask import Flask, redirect, render_template, request, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from oauthlib.oauth2 import WebApplicationClient
 
 from helpers import apology
-from db import init_db_command
 from user import User
 
 # Setup Google client
@@ -31,11 +30,8 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # Database setup
-try:
-    init_db_command()
-except sqlite3.OperationalError:
-    # Assume it's already been created
-    pass
+# Configure CS50 Library to use SQLite database
+#db = SQL("sqlite:///tmp/database.db")
 
 # OAuth 2 client setup
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
@@ -231,6 +227,6 @@ def privacy():
 
 
 @app.route("/terms")
-def faq():
+def terms():
     # Simple GET page
     return render_template("/terms.html")
