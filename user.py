@@ -1,7 +1,6 @@
 from flask_login import UserMixin
-from cs50 import SQL
 
-db = SQL("sqlite:///database.db")
+#db = SQL("sqlite:///database.db")
 
 class User(UserMixin):
     def __init__(self, id_, name, email, profile_pic):

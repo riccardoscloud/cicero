@@ -3,44 +3,64 @@ import os
 import json
 import requests
 
-from cs50 import SQL
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, redirect, render_template, request, url_for, make_response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from flask_sqlalchemy import SQLAlchemy
 from oauthlib.oauth2 import WebApplicationClient
 
 from helpers import apology
-from user import User
 
-# Setup Google client
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
-GOOGLE_DISCOVERY_URL = ("https://accounts.google.com/.well-known/openid-configuration")
 
-# Setup OpenAI env
+# OpenAI setup
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 openai.Model.list()
 
-# Configure application
+# Google OAuth setup
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+GOOGLE_DISCOVERY_URL = ("https://accounts.google.com/.well-known/openid-configuration")
+client = WebApplicationClient(GOOGLE_CLIENT_ID)
+
+# Google SQL setup
+PASSWORD = os.environ.get("PASSWORD", None)
+PUBLIC_IP_ADDRESS = os.environ.get("PUBLIC_IP_ADDRESS", None)
+DBNAME = os.environ.get("DBNAME", None)
+PROJECT_ID = os.environ.get("PROJECT_ID", None)
+INSTANCE_NAME = os.environ.get("INSTANCE_NAME", None)
+
+# Application setup
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
+app.config["SECRET_KEY"] = "yoursecretkey"
 
 # User session management setup
 # https://flask-login.readthedocs.io/en/latest
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+# SQLAlchemy setup
+app.config["SQLALCHEMY_DATABASE_URI"]= f"sqlite:////root:{PASSWORD}@{PUBLIC_IP_ADDRESS}/{DBNAME}?unix_socket =/cloudsql/{PROJECT_ID}:{INSTANCE_NAME}"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"]= True
+
 # Database setup
-# Configure CS50 Library to use SQLite database
-#db = SQL("sqlite:///tmp/database.db")
+db = SQLAlchemy(app)
 
-# OAuth 2 client setup
-client = WebApplicationClient(GOOGLE_CLIENT_ID)
+# Define User class for db
+class User(db.Model):
 
-# Flask-Login helper to retrieve a user from our db
+    id = db.Column(db.String(80), unique=True, primary_key=True)
+    name = db.Column(db.String(80), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    profile_pic = db.Column(db.String(160), nullable=False)
+
+#app.app_context().push()
+#with app.app_context():
+#db.create_all()
+
+# Flask-Login helper to retrieve a user from db
 @login_manager.user_loader
 def load_user(user_id):
-    return User.get(user_id)
-
+    return User.query.filter_by(user_id).first()
 
 # Retrieve Google's provider configuration
 def get_google_provider_cfg():
@@ -48,6 +68,8 @@ def get_google_provider_cfg():
         return requests.get(GOOGLE_DISCOVERY_URL).json()
     except:
          return apology("google error", 400)
+
+
 
 @app.route("/")
 def index():
@@ -112,15 +134,21 @@ def callback():
     else:
         return apology("User email not available or not verified by Google.", 400)
     
-    # Create a user in the db with the information provided by Google
-    user = User(
-        id_=unique_id, name=users_name, email=users_email, profile_pic=picture
-    )
+    # Find user if already in db
+    user = User.query.filter_by(id = unique_id).first()
 
-    # Doesn't exist? Add it to the database.
-    if not User.get(unique_id):
-        User.create(unique_id, users_name, users_email, picture)
-
+    # Otherwise
+    if not user:
+        try:
+            # Create user object
+            user = User(id=unique_id, name=users_name, email=users_email, profile_pic=picture)
+            # Add to db
+            db.session.add(user)
+            db.session.commit()
+        except:
+            # Handle exceptions
+            return apology("database error", 400)
+        
     # Begin user session by logging the user in
     login_user(user)
 
