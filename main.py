@@ -22,7 +22,8 @@ GOOGLE_DISCOVERY_URL = ("https://accounts.google.com/.well-known/openid-configur
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 # Google SQL setup
-PASSWORD = os.environ.get("PASSWORD", None)
+SQL_USERNAME = os.environ.get("SQL_USERNAME", None)
+SQL_PASSWORD = os.environ.get("SQL_PASSWORD", None)
 PUBLIC_IP_ADDRESS = os.environ.get("PUBLIC_IP_ADDRESS", None)
 DBNAME = os.environ.get("DBNAME", None)
 PROJECT_ID = os.environ.get("PROJECT_ID", None)
@@ -39,7 +40,8 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # SQLAlchemy setup
-app.config["SQLALCHEMY_DATABASE_URI"]= f"sqlite:////root:{PASSWORD}@{PUBLIC_IP_ADDRESS}/{DBNAME}?unix_socket =/cloudsql/{PROJECT_ID}:{INSTANCE_NAME}"
+app.config["SQLALCHEMY_DATABASE_URI"]= f"mssql+pytds://{SQL_USERNAME}:{SQL_PASSWORD}@{PUBLIC_IP_ADDRESS}:1433/{DBNAME}"
+#"sqlite:////{USERNAME}:{PASSWORD}@{PUBLIC_IP_ADDRESS}/{DBNAME}?unix_socket =/cloudsql/{PROJECT_ID}:{INSTANCE_NAME}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"]= True
 
 # Database setup
@@ -53,9 +55,8 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     profile_pic = db.Column(db.String(160), nullable=False)
 
-#app.app_context().push()
-#with app.app_context():
-#db.create_all()
+with app.app_context():
+    db.create_all()
 
 # Flask-Login helper to retrieve a user from db
 @login_manager.user_loader

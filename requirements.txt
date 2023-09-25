@@ -7,4 +7,3 @@ oauthlib
 pyOpenSSL
 Flask-SQLAlchemy
 mysqlclient
-pytds
