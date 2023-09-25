@@ -1,0 +1,22 @@
+runtime: python310
+
+handlers:
+- url: /static
+  static_dir: static
+- url: /.*
+  script: auto
+
+env_variables:
+  # OpenAI API
+  OPENAI_API_KEY: "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"
+  # Google OAuth
+  GOOGLE_CLIENT_ID: "1026540012637-f0nq4fcftaveo2aidj3htfef5td7bm4d.apps.googleusercontent.com"
+  GOOGLE_CLIENT_SECRET: "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"
+  # Google SQL
+  SQL_USERNAME: "cicero-user"
+  SQL_PASSWORD: "thesebootsaremadeforcoding"
+  PUBLIC_IP_ADDRESS: "34.89.61.194"
+  DBNAME: "cicero-db"
+  PROJECT_ID: "cicero-cs50-final-project"
+  INSTANCE_NAME: "cicero-cs50-final-project:europe-west2:cicero-sql"
+  INSTANCE_UNIX_SOCKET: "/cloudsql/cicero-cs50-final-project:europe-west2:cicero-sql"

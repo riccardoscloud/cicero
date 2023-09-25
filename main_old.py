@@ -2,23 +2,13 @@ import openai
 import os
 import json
 import requests
-import sqlalchemy
 
-from flask import Flask, redirect, render_template, request, url_for, make_response, Response
+from flask import Flask, redirect, render_template, request, url_for, make_response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
-#from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from oauthlib.oauth2 import WebApplicationClient
-from sqlalchemy import Column
-from sqlalchemy import DateTime
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy import Table
-#from dotenv import load_dotenv
-#load_dotenv()
 
 from helpers import apology
-from connect_connector import connect_with_connector
-from connect_tcp import connect_tcp_socket
 
 
 # OpenAI setup
@@ -32,12 +22,12 @@ GOOGLE_DISCOVERY_URL = ("https://accounts.google.com/.well-known/openid-configur
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 # Google SQL setup
-#SQL_USERNAME = os.environ.get("SQL_USERNAME", None)
-#SQL_PASSWORD = os.environ.get("SQL_PASSWORD", None)
-#PUBLIC_IP_ADDRESS = os.environ.get("PUBLIC_IP_ADDRESS", None)
-#DBNAME = os.environ.get("DBNAME", None)
-#PROJECT_ID = os.environ.get("PROJECT_ID", None)
-#INSTANCE_NAME = os.environ.get("INSTANCE_NAME", None)
+SQL_USERNAME = os.environ.get("SQL_USERNAME", None)
+SQL_PASSWORD = os.environ.get("SQL_PASSWORD", None)
+PUBLIC_IP_ADDRESS = os.environ.get("PUBLIC_IP_ADDRESS", None)
+DBNAME = os.environ.get("DBNAME", None)
+PROJECT_ID = os.environ.get("PROJECT_ID", None)
+INSTANCE_NAME = os.environ.get("INSTANCE_NAME", None)
 
 # Application setup
 app = Flask(__name__)
@@ -50,64 +40,28 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # SQLAlchemy setup
-#app.config["SQLALCHEMY_DATABASE_URI"]= f"mssql+pytds://{SQL_USERNAME}:{SQL_PASSWORD}@{PUBLIC_IP_ADDRESS}:1433/{DBNAME}"
+app.config["SQLALCHEMY_DATABASE_URI"]= f"mssql+pytds://{SQL_USERNAME}:{SQL_PASSWORD}@{PUBLIC_IP_ADDRESS}:1433/{DBNAME}"
 #"sqlite:////{USERNAME}:{PASSWORD}@{PUBLIC_IP_ADDRESS}/{DBNAME}?unix_socket =/cloudsql/{PROJECT_ID}:{INSTANCE_NAME}"
-#app.config["SQLALCHEMY_TRACK_MODIFICATIONS"]= True
-
-def init_connection_pool() -> sqlalchemy.engine.base.Engine:
-    # use a TCP socket when INSTANCE_HOST (e.g. 127.0.0.1) is defined
-    if os.environ.get("INSTANCE_HOST"):
-        return connect_tcp_socket()
-
-    # use the connector when INSTANCE_CONNECTION_NAME (e.g. project:region:instance) is defined
-    if os.environ.get("INSTANCE_CONNECTION_NAME"):
-        return connect_with_connector()
-
-    raise ValueError(
-        "Missing database connection type. Please define one of INSTANCE_HOST or INSTANCE_CONNECTION_NAME"
-    )
-
-
-# create 'users' table in database if it does not already exist
-def migrate_db(db: sqlalchemy.engine.base.Engine) -> None:
-    inspector = sqlalchemy.inspect(db)
-    if not inspector.has_table("users"):
-        metadata = sqlalchemy.MetaData(db)
-        Table(
-            "users",
-            metadata,
-            Column("id", String, primary_key=True, unique=True, nullable=False),
-            Column("name", String, nullable=False),
-            Column("email", String, unique=True, nullable=False),
-            Column("profile_pic", String, nullable=False),
-        )
-        metadata.create_all()
-
-
-def init_db() -> sqlalchemy.engine.base.Engine:
-    global db
-    db = init_connection_pool()
-    migrate_db(db)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"]= True
 
 # Database setup
-#db = SQLAlchemy(app)
-db = init_db()
+db = SQLAlchemy(app)
 
 # Define User class for db
-class User:
-    def __inti__(self, id, name, email, profile_pic):
-        self.id = id
-        self.name = name
-        self.email = email
-        self.profile_pic = profile_pic
+class User(db.Model):
 
-#with app.app_context():
-#    db.create_all()
+    id = db.Column(db.String(80), unique=True, primary_key=True)
+    name = db.Column(db.String(80), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    profile_pic = db.Column(db.String(160), nullable=False)
+
+with app.app_context():
+    db.create_all()
 
 # Flask-Login helper to retrieve a user from db
-#@login_manager.user_loader
-#def load_user(user_id):
-#    return User.query.filter_by(user_id).first()
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.filter_by(user_id).first()
 
 # Retrieve Google's provider configuration
 def get_google_provider_cfg():
@@ -141,7 +95,7 @@ def login():
 
 
 @app.route("/login/callback")
-def callback(db: sqlalchemy.engine.base.Engine):
+def callback():
     # Get authorization code Google sent back to you
     code = request.args.get("code")
 
@@ -182,32 +136,19 @@ def callback(db: sqlalchemy.engine.base.Engine):
         return apology("User email not available or not verified by Google.", 400)
     
     # Find user if already in db
-    # Prepare query
-    stmt1 = sqlalchemy.text("SELECT * FROM users WHERE id = ?", unique_id)
-    try:
-        with db.connect() as conn:
-            rows = conn.execute(stmt1)
-    except Exception as e:
-        return apology("db access error", 400)
-    
-    # If 1 user found, use it
-    if len(rows) == 1:
-        user = User(rows[0][0], rows[0][1], rows[0][2], rows[0][3])
-    
-    # If no user found, create new entry
-    elif len(rows) == 0:
-        user = User(unique_id, users_name, users_email, picture)
+    user = User.query.filter_by(id = unique_id).first()
+
+    # Otherwise
+    if not user:
         try:
-            with db.connect() as conn:
-                stmt2 = sqlalchemy.text("INSERT INTO users (id, name, email, profile_pic) VALUES (?, ?, ?, ?)", unique_id, users_name, users_email, picture)
-                conn.execute(stmt2)
-                conn.commit()
-        except Exception as e:
-            return apology("db insert error", 400)
-        
-    # Otherwise, return error
-    else:
-        return apology("db error", 400)
+            # Create user object
+            user = User(id=unique_id, name=users_name, email=users_email, profile_pic=picture)
+            # Add to db
+            db.session.add(user)
+            db.session.commit()
+        except:
+            # Handle exceptions
+            return apology("database error", 400)
         
     # Begin user session by logging the user in
     login_user(user)
