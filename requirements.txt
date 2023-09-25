@@ -6,10 +6,7 @@ requests
 oauthlib
 pyOpenSSL
 Flask-SQLAlchemy
-#mysqlclient
 python-tds
 sqlalchemy-pytds
 bitarray
 cloud-sql-python-connector
-#pymssql
-sqlalchemy-pytds
