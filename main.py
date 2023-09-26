@@ -5,7 +5,7 @@ import requests
 import sqlalchemy
 
 from flask import Flask, redirect, render_template, request, url_for, make_response, Response
-from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 #from flask_sqlalchemy import SQLAlchemy
 from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import Column
@@ -91,11 +91,11 @@ def init_db() -> sqlalchemy.engine.base.Engine:
 
 # Database setup
 #db = SQLAlchemy(app)
-db = init_db()
+init_db()
 
 # Define User class for db
-class User:
-    def __inti__(self, id, name, email, profile_pic):
+class User(UserMixin):
+    def __init__(self, id, name, email, profile_pic):
         self.id = id
         self.name = name
         self.email = email
@@ -107,18 +107,19 @@ class User:
 # Flask-Login helper to retrieve a user from db
 @login_manager.user_loader
 def load_user(user_id):
-        stmt = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
-        try:
-            with db.connect() as conn:
-                rows = conn.execute(stmt, parameters={"id": user_id})
-        except:
-            return apology("db login error", 400)
-        
-        if len(rows) == 1:
-            user = User(rows[0][0], rows[0][1], rows[0][2], rows[0][3])
-            return user
-        else:
-            return None
+    return User.get(user_id)
+#        stmt = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
+#        try:
+#            with db.connect() as conn:
+#                rows = conn.execute(stmt, parameters={"id": user_id})
+#        except:
+#            return apology("db login error", 400)
+#        
+#        if len(rows) == 1:
+#            user = User(rows[0][0], rows[0][1], rows[0][2], rows[0][3])
+#            return user
+#        else:
+#            return None
 
 # Retrieve Google's provider configuration
 def get_google_provider_cfg():
@@ -195,11 +196,14 @@ def callback():
     # Find user if already in db
     # Prepare query
     stmt1 = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
-    try:
-        with db.connect() as conn:
-            rows = conn.execute(stmt1, parameters={"id": unique_id})
-    except Exception as e:
-        return apology("db access error", 400)
+    #try:
+    #    with db.connect() as conn:
+    #        rows = conn.execute(stmt1, parameters={"id": unique_id})
+    #except Exception as e:
+    #    return apology("db access error", 400)
+
+    with db.connect() as conn:
+        rows = conn.execute(stmt1, parameters={"id": unique_id}).fetchall()
     
     # If 1 user found, use it
     if len(rows) == 1:
@@ -207,14 +211,14 @@ def callback():
     
     # If no user found, create new entry
     elif len(rows) == 0:
-        user = User(unique_id, users_name, users_email, picture)
-        try:
-            with db.connect() as conn:
-                stmt2 = sqlalchemy.text("INSERT INTO users (id, name, email, profile_pic) VALUES (:id, :name, :email, :profile_pic)")
-                conn.execute(stmt2, parameters={"id": unique_id, "name": users_name, "email": users_email, "profile_pic": picture})
-                conn.commit()
-        except Exception as e:
-            return apology("db insert error", 400)
+        user = User(id=unique_id, name=users_name, email=users_email, profile_pic=picture)
+        #try:
+        with db.connect() as conn:
+            stmt2 = sqlalchemy.text("INSERT INTO users (id, name, email, profile_pic) VALUES (:id, :name, :email, :profile_pic)")
+            conn.execute(stmt2, parameters={"id": unique_id, "name": users_name, "email": users_email, "profile_pic": picture})
+            conn.commit()
+        #except Exception as e:
+            #return apology("db insert error", 400)
         
     # Otherwise, return error
     else:
