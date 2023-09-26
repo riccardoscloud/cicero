@@ -13,7 +13,7 @@ env_variables:
   GOOGLE_CLIENT_ID: "1026540012637-f0nq4fcftaveo2aidj3htfef5td7bm4d.apps.googleusercontent.com"
   GOOGLE_CLIENT_SECRET: "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"
   # Google SQL
-  DB_USER: "cicero-user"
+  DB_USER: "sqlserver"
   DB_PASS: "thesebootsaremadeforcoding"
   #INSTANCE_HOST: "34.89.61.194"
   DB_NAME: "cicero-db"

@@ -72,16 +72,16 @@ def init_connection_pool() -> sqlalchemy.engine.base.Engine:
 def migrate_db(db: sqlalchemy.engine.base.Engine) -> None:
     inspector = sqlalchemy.inspect(db)
     if not inspector.has_table("users"):
-        metadata = sqlalchemy.MetaData(db)
-        Table(
+        metadata = sqlalchemy.MetaData()
+        users = Table(
             "users",
             metadata,
-            Column("id", String, primary_key=True, unique=True, nullable=False),
+            Column("id", Integer, primary_key=True, unique=True, nullable=False),
             Column("name", String, nullable=False),
-            Column("email", String, unique=True, nullable=False),
+            Column("email", String, nullable=False),
             Column("profile_pic", String, nullable=False),
         )
-        metadata.create_all()
+        metadata.create_all(db)
 
 
 def init_db() -> sqlalchemy.engine.base.Engine:
@@ -105,9 +105,20 @@ class User:
 #    db.create_all()
 
 # Flask-Login helper to retrieve a user from db
-#@login_manager.user_loader
-#def load_user(user_id):
-#    return User.query.filter_by(user_id).first()
+@login_manager.user_loader
+def load_user(user_id):
+        stmt = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
+        try:
+            with db.connect() as conn:
+                rows = conn.execute(stmt, parameters={"id": user_id})
+        except:
+            return apology("db login error", 400)
+        
+        if len(rows) == 1:
+            user = User(rows[0][0], rows[0][1], rows[0][2], rows[0][3])
+            return user
+        else:
+            return None
 
 # Retrieve Google's provider configuration
 def get_google_provider_cfg():
@@ -139,9 +150,9 @@ def login():
     )
     return redirect(request_uri)
 
-
+#db: sqlalchemy.engine.base.Engine
 @app.route("/login/callback")
-def callback(db: sqlalchemy.engine.base.Engine):
+def callback():
     # Get authorization code Google sent back to you
     code = request.args.get("code")
 
@@ -174,7 +185,7 @@ def callback(db: sqlalchemy.engine.base.Engine):
 
     # Confirm email is verified, then gather user information
     if userinfo_response.json().get("email_verified"):
-        unique_id = userinfo_response.json()["sub"]
+        unique_id = int(userinfo_response.json()["sub"])
         users_email = userinfo_response.json()["email"]
         picture = userinfo_response.json()["picture"]
         users_name = userinfo_response.json()["given_name"]
@@ -183,10 +194,10 @@ def callback(db: sqlalchemy.engine.base.Engine):
     
     # Find user if already in db
     # Prepare query
-    stmt1 = sqlalchemy.text("SELECT * FROM users WHERE id = ?", unique_id)
+    stmt1 = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
     try:
         with db.connect() as conn:
-            rows = conn.execute(stmt1)
+            rows = conn.execute(stmt1, parameters={"id": unique_id})
     except Exception as e:
         return apology("db access error", 400)
     
@@ -199,8 +210,8 @@ def callback(db: sqlalchemy.engine.base.Engine):
         user = User(unique_id, users_name, users_email, picture)
         try:
             with db.connect() as conn:
-                stmt2 = sqlalchemy.text("INSERT INTO users (id, name, email, profile_pic) VALUES (?, ?, ?, ?)", unique_id, users_name, users_email, picture)
-                conn.execute(stmt2)
+                stmt2 = sqlalchemy.text("INSERT INTO users (id, name, email, profile_pic) VALUES (:id, :name, :email, :profile_pic)")
+                conn.execute(stmt2, parameters={"id": unique_id, "name": users_name, "email": users_email, "profile_pic": picture})
                 conn.commit()
         except Exception as e:
             return apology("db insert error", 400)
