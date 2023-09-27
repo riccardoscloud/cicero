@@ -76,7 +76,8 @@ def migrate_db(db: sqlalchemy.engine.base.Engine) -> None:
         users = Table(
             "users",
             metadata,
-            Column("id", Integer, primary_key=True, unique=True, nullable=False),
+            Column("cicero_id", Integer, primary_key=True, unique=True, nullable=False),
+            Column("id", String, nullable=False),
             Column("name", String, nullable=False),
             Column("email", String, nullable=False),
             Column("profile_pic", String, nullable=False),
@@ -93,13 +94,31 @@ def init_db() -> sqlalchemy.engine.base.Engine:
 #db = SQLAlchemy(app)
 init_db()
 
-# Define User class for db
+# Define User class
 class User(UserMixin):
     def __init__(self, id, name, email, profile_pic):
         self.id = id
         self.name = name
         self.email = email
         self.profile_pic = profile_pic
+
+    @staticmethod
+    def get(user_id):
+        stmt1 = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
+        #try:
+        #    with db.connect() as conn:
+        #        rows = conn.execute(stmt1, parameters={"id": unique_id})
+        #except Exception as e:
+        #    return apology("db access error", 400)
+        with db.connect() as conn:
+            rows = conn.execute(stmt1, parameters={"id": user_id}).fetchall()
+
+        if len(rows) != 1:
+            return None
+
+        user = User(rows[0][1], rows[0][2], rows[0][3], rows[0][4])
+
+        return user
 
 #with app.app_context():
 #    db.create_all()
@@ -186,7 +205,7 @@ def callback():
 
     # Confirm email is verified, then gather user information
     if userinfo_response.json().get("email_verified"):
-        unique_id = int(userinfo_response.json()["sub"])
+        unique_id = userinfo_response.json()["sub"]
         users_email = userinfo_response.json()["email"]
         picture = userinfo_response.json()["picture"]
         users_name = userinfo_response.json()["given_name"]
@@ -207,7 +226,7 @@ def callback():
     
     # If 1 user found, use it
     if len(rows) == 1:
-        user = User(rows[0][0], rows[0][1], rows[0][2], rows[0][3])
+        user = User(rows[0][1], rows[0][2], rows[0][3], rows[0][4])
     
     # If no user found, create new entry
     elif len(rows) == 0:
