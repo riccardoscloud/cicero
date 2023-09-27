@@ -17,9 +17,16 @@
         You could've done and seen much more?<br>
         <br>
         Then start planning with Cicero straight away!<br>
-        <form action="/generate" method="GET">
-            <br><button class="btn btn-primary" type="redirect">Generate a new travel plan</button>
-        </form> 
+        {% if current_user.is_authenticated %}
+            <form action="/generate" method="GET">
+                <br><button class="btn btn-primary" type="redirect">Generate a new travel plan</button>
+            </form>
+        {% else %}
+            To start planning, click the button below to log in with Google.<br><br>
+            <form action="/login" method="GET"">
+                <button class="btn btn-primary" type="redirect">Log in with Google</button>
+            </form>
+        {% endif %}
         <br><br><br>   
 </div>
 

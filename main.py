@@ -6,15 +6,12 @@ import sqlalchemy
 
 from flask import Flask, redirect, render_template, request, url_for, make_response, Response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
-#from flask_sqlalchemy import SQLAlchemy
 from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Table
-#from dotenv import load_dotenv
-#load_dotenv()
 
 from helpers import apology
 from connect_connector import connect_with_connector
@@ -31,14 +28,6 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = ("https://accounts.google.com/.well-known/openid-configuration")
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
-# Google SQL setup
-#SQL_USERNAME = os.environ.get("SQL_USERNAME", None)
-#SQL_PASSWORD = os.environ.get("SQL_PASSWORD", None)
-#PUBLIC_IP_ADDRESS = os.environ.get("PUBLIC_IP_ADDRESS", None)
-#DBNAME = os.environ.get("DBNAME", None)
-#PROJECT_ID = os.environ.get("PROJECT_ID", None)
-#INSTANCE_NAME = os.environ.get("INSTANCE_NAME", None)
-
 # Application setup
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
@@ -50,10 +39,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # SQLAlchemy setup
-#app.config["SQLALCHEMY_DATABASE_URI"]= f"mssql+pytds://{SQL_USERNAME}:{SQL_PASSWORD}@{PUBLIC_IP_ADDRESS}:1433/{DBNAME}"
-#"sqlite:////{USERNAME}:{PASSWORD}@{PUBLIC_IP_ADDRESS}/{DBNAME}?unix_socket =/cloudsql/{PROJECT_ID}:{INSTANCE_NAME}"
-#app.config["SQLALCHEMY_TRACK_MODIFICATIONS"]= True
-
 def init_connection_pool() -> sqlalchemy.engine.base.Engine:
     # use a TCP socket when INSTANCE_HOST (e.g. 127.0.0.1) is defined
     if os.environ.get("INSTANCE_HOST"):
@@ -91,7 +76,6 @@ def init_db() -> sqlalchemy.engine.base.Engine:
     migrate_db(db)
 
 # Database setup
-#db = SQLAlchemy(app)
 init_db()
 
 # Define User class
@@ -120,8 +104,6 @@ class User(UserMixin):
 
         return user
 
-#with app.app_context():
-#    db.create_all()
 
 # Flask-Login helper to retrieve a user from db
 @login_manager.user_loader
