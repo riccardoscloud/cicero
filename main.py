@@ -15,7 +15,6 @@ from sqlalchemy import Table
 
 from helpers import apology
 from connect_connector import connect_with_connector
-from connect_tcp import connect_tcp_socket
 
 
 # OpenAI setup
@@ -34,15 +33,12 @@ app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 app.config["SECRET_KEY"] = "yoursecretkey"
 
 # User session management setup
-# https://flask-login.readthedocs.io/en/latest
 login_manager = LoginManager()
 login_manager.init_app(app)
 
 # SQLAlchemy setup
+# Generate the engine
 def init_connection_pool() -> sqlalchemy.engine.base.Engine:
-    # use a TCP socket when INSTANCE_HOST (e.g. 127.0.0.1) is defined
-    if os.environ.get("INSTANCE_HOST"):
-        return connect_tcp_socket()
 
     # use the connector when INSTANCE_CONNECTION_NAME (e.g. project:region:instance) is defined
     if os.environ.get("INSTANCE_CONNECTION_NAME"):
@@ -52,8 +48,7 @@ def init_connection_pool() -> sqlalchemy.engine.base.Engine:
         "Missing database connection type. Please define one of INSTANCE_HOST or INSTANCE_CONNECTION_NAME"
     )
 
-
-# create 'users' table in database if it does not already exist
+# Create tables in database if they don't already exist
 def migrate_db(db: sqlalchemy.engine.base.Engine) -> None:
     inspector = sqlalchemy.inspect(db)
     if not inspector.has_table("users"):
@@ -69,13 +64,13 @@ def migrate_db(db: sqlalchemy.engine.base.Engine) -> None:
         )
         metadata.create_all(db)
 
-
+# Initialize the db object and launch migrate_db()
 def init_db() -> sqlalchemy.engine.base.Engine:
     global db
     db = init_connection_pool()
     migrate_db(db)
 
-# Database setup
+# Database launch
 init_db()
 
 # Define User class
@@ -88,14 +83,13 @@ class User(UserMixin):
 
     @staticmethod
     def get(user_id):
+
         stmt1 = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
-        #try:
-        #    with db.connect() as conn:
-        #        rows = conn.execute(stmt1, parameters={"id": unique_id})
-        #except Exception as e:
-        #    return apology("db access error", 400)
-        with db.connect() as conn:
-            rows = conn.execute(stmt1, parameters={"id": user_id}).fetchall()
+        try:
+            with db.connect() as conn:
+                rows = conn.execute(stmt1, parameters={"id": user_id}).fetchall()
+        except Exception as e:
+            return apology("db access error", 400)
 
         if len(rows) != 1:
             return None
@@ -104,23 +98,10 @@ class User(UserMixin):
 
         return user
 
-
 # Flask-Login helper to retrieve a user from db
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
-#        stmt = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
-#        try:
-#            with db.connect() as conn:
-#                rows = conn.execute(stmt, parameters={"id": user_id})
-#        except:
-#            return apology("db login error", 400)
-#        
-#        if len(rows) == 1:
-#            user = User(rows[0][0], rows[0][1], rows[0][2], rows[0][3])
-#            return user
-#        else:
-#            return None
 
 # Retrieve Google's provider configuration
 def get_google_provider_cfg():
@@ -195,16 +176,12 @@ def callback():
         return apology("User email not available or not verified by Google.", 400)
     
     # Find user if already in db
-    # Prepare query
     stmt1 = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
-    #try:
-    #    with db.connect() as conn:
-    #        rows = conn.execute(stmt1, parameters={"id": unique_id})
-    #except Exception as e:
-    #    return apology("db access error", 400)
-
-    with db.connect() as conn:
-        rows = conn.execute(stmt1, parameters={"id": unique_id}).fetchall()
+    try:
+        with db.connect() as conn:
+            rows = conn.execute(stmt1, parameters={"id": unique_id}).fetchall()
+    except Exception as e:
+        return apology("db search error", 400)
     
     # If 1 user found, use it
     if len(rows) == 1:
@@ -213,13 +190,13 @@ def callback():
     # If no user found, create new entry
     elif len(rows) == 0:
         user = User(id=unique_id, name=users_name, email=users_email, profile_pic=picture)
-        #try:
-        with db.connect() as conn:
-            stmt2 = sqlalchemy.text("INSERT INTO users (id, name, email, profile_pic) VALUES (:id, :name, :email, :profile_pic)")
-            conn.execute(stmt2, parameters={"id": unique_id, "name": users_name, "email": users_email, "profile_pic": picture})
-            conn.commit()
-        #except Exception as e:
-            #return apology("db insert error", 400)
+        try:
+            with db.connect() as conn:
+                stmt2 = sqlalchemy.text("INSERT INTO users (id, name, email, profile_pic) VALUES (:id, :name, :email, :profile_pic)")
+                conn.execute(stmt2, parameters={"id": unique_id, "name": users_name, "email": users_email, "profile_pic": picture})
+                conn.commit()
+        except Exception as e:
+            return apology("db insert error", 400)
         
     # Otherwise, return error
     else:

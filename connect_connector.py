@@ -1,18 +1,14 @@
-# [START cloud_sql_sqlserver_sqlalchemy_connect_connector]
 import os
 import pytds
 
 from google.cloud.sql.connector import Connector, IPTypes
-#from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy
 
 
 def connect_with_connector() -> sqlalchemy.engine.base.Engine:
-    """
-    Initializes a connection pool for a Cloud SQL instance of SQL Server.
 
-    Uses the Cloud SQL Python Connector package.
-    """
+    # Initializes a connection pool for a Cloud SQL instance of SQL Server.
+    # Uses the Cloud SQL Python Connector package.
     instance_connection_name = os.environ.get("INSTANCE_CONNECTION_NAME")
     db_user = os.environ.get("DB_USER")
     db_pass = os.environ.get("DB_PASS")
@@ -46,7 +42,6 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     pool = sqlalchemy.create_engine(
         "mssql+pytds://",
         creator=getconn,
-        # [START_EXCLUDE]
         # Pool size is the maximum number of permanent connections to keep.
         pool_size=5,
         # Temporarily exceeds the set pool_size if no connections are available.
@@ -61,9 +56,5 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
         # Connections that live longer than the specified amount of time will be
         # re-established
         pool_recycle=600,  # 10 minutes
-        # [END_EXCLUDE]
     )
     return pool
-
-
-# [END cloud_sql_sqlserver_sqlalchemy_connect_connector]
