@@ -1,12 +1,12 @@
 Flask
+Flask-Login
+Flask-SQLAlchemy
+sqlalchemy-pytds
+SQLAlchemy
 requests
 openai
-Flask-Login
-requests
 oauthlib
 pyOpenSSL
-Flask-SQLAlchemy
 python-tds
-sqlalchemy-pytds
 bitarray
-cloud-sql-python-connector
+dotenv

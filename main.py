@@ -6,31 +6,37 @@ import sqlalchemy
 
 from flask import Flask, redirect, render_template, request, url_for, make_response, Response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
-from oauthlib.oauth2 import WebApplicationClient
+#from oauthlib.oauth2 import WebApplicationClient
+from sqlalchemy import create_engine
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Table
+from dotenv import load_dotenv
 
 from helpers import apology
-from connect_connector import connect_with_connector
 
 
 # OpenAI setup
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 openai.Model.list()
 
+"""
 # Google OAuth setup
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = ("https://accounts.google.com/.well-known/openid-configuration")
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
+"""
 
 # Application setup
 app = Flask(__name__)
+load_dotenv()
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
-app.config["SECRET_KEY"] = "yoursecretkey"
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0')
 
 # User session management setup
 login_manager = LoginManager()
@@ -38,50 +44,7 @@ login_manager.init_app(app)
 
 # SQLAlchemy setup
 # Generate the engine
-def init_connection_pool() -> sqlalchemy.engine.base.Engine:
-
-    # use the connector when INSTANCE_CONNECTION_NAME (e.g. project:region:instance) is defined
-    if os.environ.get("INSTANCE_CONNECTION_NAME"):
-        return connect_with_connector()
-
-    raise ValueError(
-        "Missing database connection type. Please define one of INSTANCE_HOST or INSTANCE_CONNECTION_NAME"
-    )
-
-# Create tables in database if they don't already exist
-def migrate_db(db: sqlalchemy.engine.base.Engine) -> None:
-    inspector = sqlalchemy.inspect(db)
-    if not inspector.has_table("users"):
-        metadata = sqlalchemy.MetaData()
-        users = Table(
-            "users",
-            metadata,
-            Column("cicero_id", Integer, primary_key=True, unique=True, nullable=False),
-            Column("id", String, nullable=False),
-            Column("name", String, nullable=False),
-            Column("email", String, nullable=False),
-            Column("profile_pic", String, nullable=False)
-        )
-        trips = Table(
-            "trips",
-            metadata,
-            Column("trip_id", Integer, primary_key=True, unique=True, nullable=False),
-            Column("user_id", String, ForeignKey("users.id"), nullable=False),
-            Column("timestamp", DateTime, nullable=False),
-            Column("destination", String, nullable=False),
-            Column("duration", String, nullable=False),
-            Column("travel_plan", String, nullable=False)
-        )
-        metadata.create_all(db)
-
-# Initialize the db object and launch migrate_db()
-def init_db() -> sqlalchemy.engine.base.Engine:
-    global db
-    db = init_connection_pool()
-    migrate_db(db)
-
-# Database launch
-init_db()
+db = create_engine("sqlite:///database.db")
 
 # Define User class
 class User(UserMixin):
@@ -94,7 +57,7 @@ class User(UserMixin):
     @staticmethod
     def get(user_id):
 
-        stmt1 = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
+        stmt1 = sqlalchemy.text("SELECT * FROM users WHERE cicero_id = :id")
         try:
             with db.connect() as conn:
                 rows = conn.execute(stmt1, parameters={"id": user_id}).fetchall()
@@ -104,7 +67,7 @@ class User(UserMixin):
         if len(rows) != 1:
             return None
 
-        user = User(rows[0][1], rows[0][2], rows[0][3], rows[0][4])
+        user = User(rows[0][0], rows[0][2], rows[0][3], rows[0][4])
 
         return user
 
@@ -113,13 +76,14 @@ class User(UserMixin):
 def load_user(user_id):
     return User.get(user_id)
 
+"""
 # Retrieve Google's provider configuration
 def get_google_provider_cfg():
     try:
         return requests.get(GOOGLE_DISCOVERY_URL).json()
     except:
          return apology("google error", 400)
-
+"""
 
 
 @app.route("/")
@@ -127,9 +91,9 @@ def index():
     # Simple GET page, with content displayed conditionally of session
     return render_template("/index.html")
 
-
-@app.route("/login")
-def login():
+"""
+@app.route("/glogin")
+def glogin():
     # Find out what URL to hit for Google login
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
@@ -144,7 +108,7 @@ def login():
     return redirect(request_uri)
 
 #db: sqlalchemy.engine.base.Engine
-@app.route("/login/callback")
+@app.route("/glogin/callback")
 def callback():
     # Get authorization code Google sent back to you
     code = request.args.get("code")
@@ -217,6 +181,12 @@ def callback():
 
     # Send user back to homepage
     return redirect(url_for("index"))
+"""
+
+@app.route("/login")
+def login():
+    # TODO
+    return
 
 
 @app.route("/logout")
