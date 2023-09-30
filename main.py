@@ -62,6 +62,16 @@ def migrate_db(db: sqlalchemy.engine.base.Engine) -> None:
             Column("email", String, nullable=False),
             Column("profile_pic", String, nullable=False),
         )
+        trips = Table(
+            "trips",
+            metadata,
+            Column("trip_id", Integer, primary_key=True, unique=True, nullable=False),
+            Column("user_id", String, ForeignKey("users.id"), nullable=False),
+            Column("timestamp", )
+            Column("destination", )
+            Column("duration", )
+            Column("travel_plan", )
+        )
         metadata.create_all(db)
 
 # Initialize the db object and launch migrate_db()
