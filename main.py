@@ -60,17 +60,17 @@ def migrate_db(db: sqlalchemy.engine.base.Engine) -> None:
             Column("id", String, nullable=False),
             Column("name", String, nullable=False),
             Column("email", String, nullable=False),
-            Column("profile_pic", String, nullable=False),
+            Column("profile_pic", String, nullable=False)
         )
         trips = Table(
             "trips",
             metadata,
             Column("trip_id", Integer, primary_key=True, unique=True, nullable=False),
             Column("user_id", String, ForeignKey("users.id"), nullable=False),
-            Column("timestamp", )
-            Column("destination", )
-            Column("duration", )
-            Column("travel_plan", )
+            Column("timestamp", DateTime, nullable=False),
+            Column("destination", String, nullable=False),
+            Column("duration", String, nullable=False),
+            Column("travel_plan", String, nullable=False)
         )
         metadata.create_all(db)
 
