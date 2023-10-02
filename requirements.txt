@@ -9,4 +9,5 @@ oauthlib
 pyOpenSSL
 python-tds
 bitarray
-dotenv
+python-dotenv
+werkzeug==2.2

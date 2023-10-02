@@ -6,6 +6,7 @@ import sqlalchemy
 
 from flask import Flask, redirect, render_template, request, url_for, make_response, Response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
+from werkzeug.security import check_password_hash, generate_password_hash
 #from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
 from sqlalchemy import Column
@@ -15,7 +16,7 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from dotenv import load_dotenv
 
-from helpers import apology
+from helpers import apology, password_check
 
 
 # OpenAI setup
@@ -44,7 +45,7 @@ login_manager.init_app(app)
 
 # SQLAlchemy setup
 # Generate the engine
-db = create_engine("sqlite:///database.db")
+db = create_engine("sqlite:///cicerodb.db")
 
 # Define User class
 class User(UserMixin):
@@ -57,10 +58,10 @@ class User(UserMixin):
     @staticmethod
     def get(user_id):
 
-        stmt1 = sqlalchemy.text("SELECT * FROM users WHERE cicero_id = :id")
+        stmt = sqlalchemy.text("SELECT * FROM users WHERE cicero_id = :id")
         try:
             with db.connect() as conn:
-                rows = conn.execute(stmt1, parameters={"id": user_id}).fetchall()
+                rows = conn.execute(stmt, parameters={"id": user_id}).fetchall()
         except Exception as e:
             return apology("db access error", 400)
 
@@ -183,10 +184,107 @@ def callback():
     return redirect(url_for("index"))
 """
 
-@app.route("/login")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    # Register user
+
+    # User reached route via POST (as by submitting a form via POST)
+    if request.method == "POST":
+
+        # Ensure name was submitted
+        if not request.form.get("name"):
+            return apology("must provide name", 400)
+        
+                # Ensure username was submitted
+        if not request.form.get("email"):
+            return apology("must provide email", 400)
+        
+        # TODO 
+        # Check email is valid
+
+
+        # Query database for email
+        stmt1 = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
+        try:
+            with db.connect() as conn:
+                rows = conn.execute(stmt1, parameters={"email": request.form.get("email")}).fetchall()
+        except Exception as e:
+            return apology("db access error", 400)
+
+        # Ensure username doesn't exist
+        if len(rows) > 0:
+            return apology("an account with this email already exists", 400)
+
+        # Ensure password was submitted
+        if not request.form.get("password") or request.form.get("password") != request.form.get("confirmation"):
+            return apology("must provide two matching passwords", 400)
+        
+        # Ensure password is secure
+        check = password_check(request.form.get("password"))
+        if not check["password_ok"]:
+            return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 400)
+
+        name = request.form.get("name")
+        email = request.form.get("email")
+        hash = generate_password_hash(request.form.get("password"))
+
+        try:
+            with db.connect() as conn:
+                stmt2 = sqlalchemy.text("INSERT INTO users (name, email, hash) VALUES (:name, :email, :hash)")
+                conn.execute(stmt2, parameters={"name": name, "email": email, "hash": hash})
+                conn.commit()
+        except Exception as e:
+            return apology("db insert error", 400)
+
+        # Redirect user to home page
+        return redirect(url_for("login"))
+
+    # User reached route via GET (as by clicking a link or via redirect)
+    else:
+        return render_template("register.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    # TODO
-    return
+
+    # User reached route via POST (as by submitting a form via POST)
+    if request.method == "POST":
+
+        # Ensure email was submitted
+        if not request.form.get("email"):
+            return apology("must provide email", 403)
+        
+        # TODO 
+        # Check email validity
+
+        # Ensure password was submitted
+        elif not request.form.get("password"):
+            return apology("must provide password", 403)
+
+        # Query database for email
+        stmt = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
+        try:
+            with db.connect() as conn:
+                rows = conn.execute(stmt, parameters={"email": request.form.get("email")}).fetchall()
+        except Exception as e:
+            return apology("db access error", 400)
+
+        if len(rows) != 1 or not check_password_hash(rows[0][5], request.form.get("password")):
+            return apology("invalid email and/or password", 403)
+
+        user = User(rows[0][0], rows[0][2], rows[0][3], rows[0][4])
+
+        # Remember which user has logged in
+        login_user(user)
+
+        # Redirect user to home page
+        return redirect(url_for("index"))
+
+    # User reached route via GET (as by clicking a link or via redirect)
+    else:
+        return render_template("login.html")
 
 
 @app.route("/logout")

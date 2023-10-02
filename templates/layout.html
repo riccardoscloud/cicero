@@ -41,11 +41,12 @@
                             <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
                         </ul>
                     {% else %}
-                    <ul class="navbar-nav me-auto mt-2">
-                        <li class="nav-item"><a class="nav-link" href="/faq">FAQ</a></li>
-                    </ul>
+                        <ul class="navbar-nav me-auto mt-2">
+                            <li class="nav-item"><a class="nav-link" href="/faq">FAQ</a></li>
+                        </ul>
                         <ul class="navbar-nav ms-auto mt-2">
-                            <li class="nav-item"><a class="nav-link" href="/login">Log In with Google</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
                         </ul>
                     {% endif %}
                 </div>
@@ -65,9 +66,13 @@
         </main>
 
         <footer class="mb-5 small text-center text-muted">
-            Created by Riccardo @ <a href="https://riccardoscloud.com/" target="_blank">Riccardo's Cloud</a>
+                Created by Riccardo @ <a href="https://riccardoscloud.com/" target="_blank">Riccardo's Cloud</a>
+            <br>
+            <a class="fs-6">
+                <a href="/privacy">Privacy policy</a><a> - </a><a href="/terms">Terms & Conditions</a>
+            </a>
         </footer>
 
     </body>
-
+    
 </html>

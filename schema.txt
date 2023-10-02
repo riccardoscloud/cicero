@@ -1,14 +1,17 @@
 CREATE TABLE users (
-    cicero_id INT PRIMARY_KEY, 
+    cicero_id INTEGER PRIMARY KEY, 
     google_id VARCHAR(30), 
     name VARCHAR(30) NOT NULL, 
     email VARCHAR(60) NOT NULL, 
-    profile_pic TEXT);
+    profile_pic TEXT,
+    hash VARCHAR(60)
+    );
 
 CREATE TABLE trips (
-    trip_id INT PRIMARY_KEY, 
+    trip_id INT IDENTITY(1,1) PRIMARY KEY, 
     user_id INT FOREIGN_KEY REFERENCES users(cicero_id), 
     generation_ts TIMESTAMP, 
     destination VARCHAR(90) NOT NULL, 
     duration VARCHAR(15) NOT NULL, 
-    travel_plan TEXT NOT NULL);
+    travel_plan TEXT NOT NULL
+    );
