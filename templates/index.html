@@ -22,12 +22,12 @@
                 <br><button class="btn btn-primary" type="redirect">Generate a new travel plan</button>
             </form>
         {% else %}
-            To start planning, click the buttons below to register or log in.<br><br>
-            <form action="/register" method="GET" style="display:inline-block;margin-right:10px;">
-                <button class="btn btn-primary" type="redirect">Register</button>
-            </form>
-            <form action="/login" method="GET" style="display:inline-block">
+            To start planning, click the buttons below to register or login.<br><br>
+            <form action="/login" method="GET" style="display:inline-block;margin-right:10px;">
                 <button class="btn btn-primary" type="redirect">Login</button>
+            </form>
+            <form action="/register" method="GET" style="display:inline-block">
+                <button class="btn btn-primary" type="redirect">Register</button>
             </form>
         {% endif %}
         <br><br><br>   
