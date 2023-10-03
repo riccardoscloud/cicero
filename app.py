@@ -9,14 +9,15 @@ from flask_login import LoginManager, current_user, login_required, login_user, 
 from werkzeug.security import check_password_hash, generate_password_hash
 #from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
-from sqlalchemy import Column
-from sqlalchemy import DateTime
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy import Table
+#from sqlalchemy import Column
+#from sqlalchemy import DateTime
+#from sqlalchemy import Integer
+#from sqlalchemy import String
+#from sqlalchemy import Table
 from dotenv import load_dotenv
+from datetime import datetime
 
-from helpers import apology, password_check
+from helpers import apology, email_check, password_check
 
 
 # OpenAI setup
@@ -197,12 +198,13 @@ def register():
         if not request.form.get("name"):
             return apology("must provide name", 400)
         
-                # Ensure username was submitted
+        # Ensure username was submitted
         if not request.form.get("email"):
             return apology("must provide email", 400)
-        
-        # TODO 
+         
         # Check email is valid
+        if not email_check(request.form.get("email")):
+            return apology("not a valid email", 400)
 
 
         # Query database for email
@@ -256,8 +258,9 @@ def login():
         if not request.form.get("email"):
             return apology("must provide email", 403)
         
-        # TODO 
-        # Check email validity
+        # Check email is valid
+        if not email_check(request.form.get("email")):
+            return apology("not a valid email", 400)
 
         # Ensure password was submitted
         elif not request.form.get("password"):
@@ -364,6 +367,20 @@ def generate():
         # Cleanup output
         bad_output = completion.choices[0].message.content
         OUTPUT = bad_output.replace("\n", '<br>')
+
+        # Set some variables
+        user_id = current_user.get_id()
+        timestamp = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
+
+        # Insert trip into database
+        try:
+            with db.connect() as conn:
+                stmt = sqlalchemy.text("INSERT INTO trips (user_id, generation_ts, destination, month, duration, travel_plan) VALUES (:id, :ts, :destination, :month, :duration, :travel_plan)")
+                conn.execute(stmt, parameters={"id": user_id, "ts": timestamp, "destination": destination, "month": month, "duration": duration, "travel_plan": OUTPUT})
+                conn.commit()
+        except Exception as e:
+            return apology("db insert error", 400)
+
         
         return render_template("/output.html", your_destination=destination, output=OUTPUT)
 

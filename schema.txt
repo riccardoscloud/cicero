@@ -8,10 +8,11 @@ CREATE TABLE users (
     );
 
 CREATE TABLE trips (
-    trip_id INT IDENTITY(1,1) PRIMARY KEY, 
-    user_id INT FOREIGN_KEY REFERENCES users(cicero_id), 
-    generation_ts TIMESTAMP, 
+    trip_id INTEGER PRIMARY KEY, 
+    user_id INTEGER FOREIGN_KEY REFERENCES users(cicero_id), 
+    generation_ts VARCHAR(20), 
     destination VARCHAR(90) NOT NULL, 
+    month VARCHAR(15) NOT NULL,
     duration VARCHAR(15) NOT NULL, 
     travel_plan TEXT NOT NULL
     );

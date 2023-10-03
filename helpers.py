@@ -16,6 +16,14 @@ def apology(message, code=400):
         return s
     return render_template("apology.html", top=code, bottom=escape(message)), code
 
+def email_check(email):
+
+    # Define regex for validating email
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if re.match(regex, email):
+        return True
+    else:
+        return False
 
 def password_check(password):
     """

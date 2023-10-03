@@ -16,9 +16,9 @@ This version currently includes:
 - Local SQLite database for storage of user accounts and created trips.
 - Registering with email address and password.
 - apology() function for custom error return.
+- Checking user input: email format, password security.
 
 TO DO:
-- Check email input from user is a valid email.
 - Store trips when generated.
 - History page.
 - Account page: modify username, add/change/delete profile pic.
