@@ -8,16 +8,25 @@
 <div class="header">
     <h1>Your trips</h1>
 </div>
-<div class="container">
 
-    {% for trip in trips %}
-        <div class="section">
-            
-            TODO: Grid (fixed size cells) with: Destination, Month, Duration, Generation date, View travel plan(link to output.html)
-
+{% for trip in trips %}
+    <div class="section">
+        <div class="container text-center">
+            <div class="row">
+                <div class="col py-lg-2" style="border-style: double; border-color: black; font-weight: bold; font-size: large; background-color: #459f09; color: white;">{{ trip["destination"] }}</div>
+            </div>
+            <div class="row">
+                <div class="col" style="border-style: double; font-weight: bold; background-color: #66cf20">{{ trip["month"] }}</div>
+                <div class="col" style="border-style: double; font-weight: bold; background-color: #66cf20">{{ trip["duration"] }}</div>
+            </div>
+            <div class="row">
+                <div class="col" style="border-style: double; font-size: small;">Created: {{ trip["generation_ts"] }}</div>
+                <div class="col" style="border-style: double; font-size: small; text" href="/output.html">View trip</div> 
+            </div>
         </div>
+    </div>
+{% endfor %}
 
         <br><br><br>   
-</div>
 
 {% endblock %}

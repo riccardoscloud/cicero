@@ -33,7 +33,7 @@ load_dotenv()
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', debug=True)
 
 # User session management setup
 login_manager = LoginManager()
@@ -383,6 +383,25 @@ def generate():
     else:
 
         return render_template("/generate.html", interests=INTERESTS, months=MONTHS, duration=DURATION)
+
+
+@app.route("/history")
+@login_required
+def history():
+
+    # Query database for email
+    stmt = sqlalchemy.text("SELECT * FROM trips WHERE user_id = :id ORDER BY trip_id DESC")
+    id = current_user.get_id()
+    try:
+        with db.connect() as conn:
+            TRIPS = conn.execute(stmt, parameters={"id": id}).fetchall()
+    except Exception as e:
+        return apology("db access error", 400)
+    
+    print(TRIPS)
+
+    # Return history page with list of trips (dicts)
+    return render_template("/history.html", trips=TRIPS)
 
 
 @app.route("/faq")
