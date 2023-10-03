@@ -385,23 +385,51 @@ def generate():
         return render_template("/generate.html", interests=INTERESTS, months=MONTHS, duration=DURATION)
 
 
-@app.route("/history")
+@app.route("/history", methods=["GET", "POST"])
 @login_required
 def history():
 
     # Query database for email
-    stmt = sqlalchemy.text("SELECT * FROM trips WHERE user_id = :id ORDER BY trip_id DESC")
+    stmt1 = sqlalchemy.text("SELECT * FROM trips WHERE user_id = :id ORDER BY trip_id DESC")
     id = current_user.get_id()
     try:
         with db.connect() as conn:
-            TRIPS = conn.execute(stmt, parameters={"id": id}).fetchall()
+            TRIPS = conn.execute(stmt1, parameters={"id": id}).fetchall()
     except Exception as e:
         return apology("db access error", 400)
     
-    print(TRIPS)
+    if request.method == "POST":
 
-    # Return history page with list of trips (dicts)
-    return render_template("/history.html", trips=TRIPS)
+        stmt2 = sqlalchemy.text("SELECT * FROM trips WHERE trip_id = :id")
+        trip_id = request.form.get("trip_id")
+        try:
+            with db.connect() as conn:
+                ROWS = conn.execute(stmt2, parameters={"id": trip_id}).fetchall()
+        except Exception as e:
+            return apology("db access error", 400)
+        
+        if len(ROWS) != 1:
+            return apology("form error", 400)
+        
+        destination = ROWS[0][3]
+        OUTPUT = ROWS[0][6]
+
+        return render_template("output.html", your_destination=destination, output=OUTPUT)
+    
+    else:
+        # Query database for email
+        stmt = sqlalchemy.text("SELECT * FROM trips WHERE user_id = :id ORDER BY trip_id DESC")
+        id = current_user.get_id()
+        try:
+            with db.connect() as conn:
+                TRIPS = conn.execute(stmt, parameters={"id": id}).fetchall()
+        except Exception as e:
+            return apology("db access error", 400)
+        
+        print(TRIPS)
+
+        # Return history page with list of trips (dicts)
+        return render_template("/history.html", trips=TRIPS)
 
 
 @app.route("/faq")

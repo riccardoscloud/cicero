@@ -10,6 +10,7 @@
         <h1>Your trips</h1>
     </div>
 
+    <form action="/history" method="post">
     {% for trip in trips %}
         <div class="section">
             <div class="container text-center">
@@ -22,11 +23,12 @@
                 </div>
                 <div class="row">
                     <div class="col" style="border-style: double; font-size: small;">Created: {{ trip["generation_ts"] }}</div>
-                    <div class="col" style="border-style: double; font-size: small;" href="/output.html">View trip</div> 
+                    <div class="col" style="border-style: double; font-size: small;"><button class="btn btn-primary" id="trip_id" name="trip_id" value="{{ trip['trip_id'] }}" type="submit">View trip</button></div> 
                 </div>
             </div>
         </div>
     {% endfor %}
+    </form>
 
     <br><br><br>   
 
