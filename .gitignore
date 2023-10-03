@@ -1,4 +1,3 @@
-# Ignore app.yaml as it contains the env variables
 __pycache__
 .env
 .venv
