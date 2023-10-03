@@ -17,9 +17,9 @@ This version currently includes:
 - Registering with email address and password.
 - apology() function for custom error return.
 - Checking user input: email format, password security.
+- Storing user trips.
 
 TO DO:
-- Store trips when generated.
 - History page.
 - Account page: modify username, add/change/delete profile pic.
 - Dynamic display of user name and profile pic.

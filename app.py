@@ -9,11 +9,6 @@ from flask_login import LoginManager, current_user, login_required, login_user, 
 from werkzeug.security import check_password_hash, generate_password_hash
 #from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
-#from sqlalchemy import Column
-#from sqlalchemy import DateTime
-#from sqlalchemy import Integer
-#from sqlalchemy import String
-#from sqlalchemy import Table
 from dotenv import load_dotenv
 from datetime import datetime
 
