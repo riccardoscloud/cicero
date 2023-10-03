@@ -46,7 +46,7 @@ login_manager.init_app(app)
 
 # SQLAlchemy setup
 # Generate the engine
-db = create_engine("sqlite:///cicerodb.db")
+db = create_engine("sqlite:///database.db")
 
 # Define User class
 class User(UserMixin):
