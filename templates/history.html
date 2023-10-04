@@ -22,8 +22,8 @@
                     <div class="col" style="border-style: double; font-weight: bold; background-color: #66cf20">{{ trip["duration"] }}</div>
                 </div>
                 <div class="row">
-                    <div class="col" style="border-style: double; font-size: small;">Created: {{ trip["generation_ts"] }}</div>
-                    <div class="col" style="border-style: double; font-size: small;"><button id="trip_id" name="trip_id" value="{{ trip['trip_id'] }}" type="submit">View trip</button></div> 
+                    <div class="col" style="border-style: double; font-size: small;"><a style="vertical-align: middle">Created: {{ trip["generation_ts"] }}</a></div>
+                    <div class="col" style="border-style: double; font-size: small; vertical-align: middle;""><button class="btn btn-sm" id="trip_id" name="trip_id" value="{{ trip['trip_id'] }}" type="submit">View trip</button></div> 
                 </div>
             </div>
         </div>

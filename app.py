@@ -1,7 +1,7 @@
 import openai
 import os
-import json
-import requests
+#import json
+#import requests
 import sqlalchemy
 
 from flask import Flask, redirect, render_template, request, url_for, make_response, Response
