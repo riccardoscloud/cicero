@@ -14,6 +14,8 @@ from datetime import datetime
 
 from helpers import apology, email_check, password_check
 
+# Load env variables
+load_dotenv()
 
 # OpenAI setup
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -29,7 +31,6 @@ client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 # Application setup
 app = Flask(__name__)
-load_dotenv()
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 
 if __name__ == "__main__":
