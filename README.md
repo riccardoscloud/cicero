@@ -17,11 +17,10 @@ This version currently includes:
 - Registering with email address and password.
 - apology() function for custom error return.
 - Checking user input: email format, password security.
-- Storing user trips.
+- Storing user trips, presenting them on the history page.
 
 TO DO:
-- History page.
 - Account page: modify username, add/change/delete profile pic.
 - Dynamic display of user name and profile pic.
 - Log in with Google.
-- Loading anumation when generating.
+- Loading animation when generating.
