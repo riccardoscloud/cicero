@@ -24,3 +24,4 @@ TO DO:
 - Dynamic display of user name and profile pic.
 - Log in with Google.
 - Loading animation when generating.
+- Session cleared at logout (cookies?)
