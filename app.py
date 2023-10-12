@@ -294,6 +294,47 @@ def logout():
     return redirect(url_for("index"))
 
 
+@app.route("/account")
+@login_required
+def account():
+    # Simple GET page
+    return render_template("/account.html")
+
+
+@app.route("/change_name", methods=["POST"])
+@login_required
+def change_name():
+    
+    # Current user id
+    user_id = current_user.get_id()
+    user_name = request.form.get("name")
+    
+    # Ensure user name was submitted
+    if not user_name:
+        return apology("must provide new user name", 403)
+    
+    stmt = sqlalchemy.text("UPDATE users SET name = :new_name WHERE cicero_id = :id;")
+    try:
+        with db.connect() as conn:
+            conn.execute(stmt, parameters={"new_name": user_name, "id": user_id})
+            conn.commit()
+            print("Name set")
+    except Exception as e:
+        return apology("db access error", 400)
+    
+    stmt2 = sqlalchemy.text("SELECT name FROM users WHERE cicero_id = :id")
+    try:
+        with db.connect() as conn:
+            name_confirmation = conn.execute(stmt2, parameters={"id": user_id}).fetchall()
+            print(name_confirmation)
+    except Exception as e:
+        return apology("db access error", 400)
+    
+    
+
+    return redirect(url_for("account"))
+
+
 @app.route("/generate", methods=["GET", "POST"])
 @login_required
 def generate():
