@@ -12,7 +12,7 @@ Wed deployment of the Cicero project on AWS Lightsail.
 #### Flask - Flask-login - SQLAlchemy - Google Fonts - Bootstrap - ChatGPT
 
 This version currently includes:
-- OpenAI API ("gpt-3.5-turbo") for content generation.
+- OpenAI API ("gpt-3.5-turbo") for content generation, using stream.
 - Local SQLite database for storage of user accounts and created trips.
 - Registering with email address and password.
 - apology() function for custom error return.
