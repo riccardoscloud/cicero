@@ -3,6 +3,7 @@ import os
 #import json
 #import requests
 import sqlalchemy
+import time
 
 from flask import Flask, redirect, render_template, request, url_for, make_response, Response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
@@ -351,18 +352,41 @@ def generate():
             All of the above should also be relevant to the moment of the year I'm visiting.\
             For example you would suggest attending the cherry trees blossom if I were to go to Tokio at the end of March."
 
+        # TESTING: Record the time before the request is sent
+        #start_time = time.time()
+        
         # Query ChatGPT API        
         completion = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are Cicero, an experienced travel guide who has visited the whole world. Use a professional, but friendly tone."},
                 {"role": "user", "content": f"{PROMPT}"}
-            ]
+            ],
+            stream=True
         )
 
+        # Create variables to collect the stream of chunks
+        collected_chunks = []
+        collected_messages = []
+
+        # Iterate through the stream of responses
+        for chunk in completion:
+            # TESTING:
+            #chunk_time = time.time() - start_time  # calculate the time delay of the chunk
+            collected_chunks.append(chunk)  # save the event response
+            chunk_message = chunk['choices'][0]['delta']  # extract the message
+            collected_messages.append(chunk_message)  # save the message
+            # TESTING:
+            #print(f"Message received {chunk_time:.2f} seconds after request: {chunk_message}")  # print the delay and text
+
+        # TESTING:
+        #print(f"Full response received {chunk_time:.2f} seconds after request")
+        full_reply_content = ''.join([m.get('content', '') for m in collected_messages])
+        # TESTING:
+        #print(f"Full conversation received: {full_reply_content}")
+
         # Cleanup output
-        bad_output = completion.choices[0].message.content
-        OUTPUT = bad_output.replace("\n", '<br>')
+        OUTPUT = full_reply_content.replace("\n", '<br>')
 
         # Set some variables
         user_id = current_user.get_id()
