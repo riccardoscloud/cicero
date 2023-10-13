@@ -15,12 +15,13 @@ This version currently includes:
 - OpenAI API ("gpt-3.5-turbo") for content generation, using stream.
 - Local SQLite database for storage of user accounts and created trips.
 - Registering with email address and password.
-- apology() function for custom error return.
+- Apology() function for custom error return.
 - Checking user input: email format, password security.
 - Storing user trips, presenting them on the history page.
+- Account page: change username, change password.
 
 TO DO:
-- Account page: modify username, add/change/delete profile pic.
+- Add/change/delete profile pic.
 - Dynamic display of user name and profile pic.
 - Log in with Google.
 - Loading animation when generating.

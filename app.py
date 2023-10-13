@@ -305,7 +305,7 @@ def account():
 @login_required
 def change_name():
     
-    # Current user id
+    # Initialize variables
     user_id = current_user.get_id()
     user_name = request.form.get("name")
     
@@ -313,24 +313,68 @@ def change_name():
     if not user_name:
         return apology("must provide new user name", 403)
     
+    # Update db record
     stmt = sqlalchemy.text("UPDATE users SET name = :new_name WHERE cicero_id = :id;")
     try:
         with db.connect() as conn:
             conn.execute(stmt, parameters={"new_name": user_name, "id": user_id})
             conn.commit()
-            print("Name set")
     except Exception as e:
         return apology("db access error", 400)
     
-    stmt2 = sqlalchemy.text("SELECT name FROM users WHERE cicero_id = :id")
+    return redirect(url_for("account"))
+
+
+@app.route("/change_password", methods=["POST"])
+@login_required
+def change_password():
+
+    # Initialize variables
+    user_id = current_user.get_id()
+    old_pass = request.form.get("old_password")
+    new_pass_1 = request.form.get("new_password_1")
+    new_pass_2 = request.form.get("new_password_2")
+
+    # Check old password is submitted
+    if not old_pass:
+        return apology("must submit your current password", 403)
+    
+    # Check password is valid
+    stmt1 = sqlalchemy.text("SELECT * FROM users WHERE cicero_id = :id")
     try:
         with db.connect() as conn:
-            name_confirmation = conn.execute(stmt2, parameters={"id": user_id}).fetchall()
-            print(name_confirmation)
+            rows = conn.execute(stmt1, parameters={"id": user_id}).fetchall()
     except Exception as e:
         return apology("db access error", 400)
+
+    if len(rows) != 1 or not check_password_hash(rows[0][5], old_pass):
+        return apology("invalid password", 403)
     
+    # Ensure new password was submitted and is confirmed
+    if not new_pass_1 or new_pass_1 != new_pass_2:
+        return apology("must provide two matching passwords", 400)
     
+    # Check new password is different from old one
+    if new_pass_1 == old_pass:
+        return apology("new password must be different from old password", 403)
+
+    # Check new password is secure
+    check = password_check(new_pass_1)
+    if not check["password_ok"]:
+        return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 400)
+
+    # Hash new password
+    hash = generate_password_hash(new_pass_1)
+
+    # Update db record
+    stmt2 = sqlalchemy.text("UPDATE users SET hash = :new_hash WHERE cicero_id = :id;")
+    try:
+        with db.connect() as conn:
+            conn.execute(stmt2, parameters={"new_hash": hash, "id": user_id})
+            conn.commit()
+    except Exception as e:
+        return apology("db access error", 400)
+
 
     return redirect(url_for("account"))
 
