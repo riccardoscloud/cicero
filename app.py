@@ -60,7 +60,7 @@ class User(UserMixin):
         try:
             with db.connect() as conn:
                 rows = conn.execute(stmt, parameters={"id": user_id}).fetchall()
-        except Exception as e:
+        except:
             return apology("db access error", 400)
 
         if len(rows) != 1:
@@ -153,7 +153,7 @@ def callback():
     try:
         with db.connect() as conn:
             rows = conn.execute(stmt1, parameters={"id": unique_id}).fetchall()
-    except Exception as e:
+    except:
         return apology("db search error", 400)
     
     # If 1 user found, use it
@@ -168,7 +168,7 @@ def callback():
                 stmt2 = sqlalchemy.text("INSERT INTO users (id, name, email, profile_pic) VALUES (:id, :name, :email, :profile_pic)")
                 conn.execute(stmt2, parameters={"id": unique_id, "name": users_name, "email": users_email, "profile_pic": picture})
                 conn.commit()
-        except Exception as e:
+        except:
             return apology("db insert error", 400)
         
     # Otherwise, return error
@@ -209,7 +209,7 @@ def register():
         try:
             with db.connect() as conn:
                 rows = conn.execute(stmt1, parameters={"email": request.form.get("email")}).fetchall()
-        except Exception as e:
+        except:
             return apology("db access error", 400)
 
         # Ensure username doesn't exist
@@ -234,7 +234,7 @@ def register():
                 stmt2 = sqlalchemy.text("INSERT INTO users (name, email, hash) VALUES (:name, :email, :hash)")
                 conn.execute(stmt2, parameters={"name": name, "email": email, "hash": hash})
                 conn.commit()
-        except Exception as e:
+        except:
             return apology("db insert error", 400)
 
         # Redirect user to home page
@@ -268,7 +268,7 @@ def login():
         try:
             with db.connect() as conn:
                 rows = conn.execute(stmt, parameters={"email": request.form.get("email")}).fetchall()
-        except Exception as e:
+        except:
             return apology("db access error", 400)
 
         if len(rows) != 1 or not check_password_hash(rows[0][5], request.form.get("password")):
@@ -319,7 +319,7 @@ def change_name():
         with db.connect() as conn:
             conn.execute(stmt, parameters={"new_name": user_name, "id": user_id})
             conn.commit()
-    except Exception as e:
+    except:
         return apology("db access error", 400)
     
     return redirect(url_for("account"))
@@ -344,7 +344,7 @@ def change_password():
     try:
         with db.connect() as conn:
             rows = conn.execute(stmt1, parameters={"id": user_id}).fetchall()
-    except Exception as e:
+    except:
         return apology("db access error", 400)
 
     if len(rows) != 1 or not check_password_hash(rows[0][5], old_pass):
@@ -372,9 +372,8 @@ def change_password():
         with db.connect() as conn:
             conn.execute(stmt2, parameters={"new_hash": hash, "id": user_id})
             conn.commit()
-    except Exception as e:
+    except:
         return apology("db access error", 400)
-
 
     return redirect(url_for("account"))
 
@@ -483,7 +482,7 @@ def generate():
                 stmt = sqlalchemy.text("INSERT INTO trips (user_id, generation_ts, destination, month, duration, travel_plan) VALUES (:id, :ts, :destination, :month, :duration, :travel_plan)")
                 conn.execute(stmt, parameters={"id": user_id, "ts": timestamp, "destination": destination, "month": month, "duration": duration, "travel_plan": OUTPUT})
                 conn.commit()
-        except Exception as e:
+        except:
             return apology("db insert error", 400)
 
         
@@ -505,7 +504,7 @@ def history():
     try:
         with db.connect() as conn:
             TRIPS = conn.execute(stmt1, parameters={"id": id}).fetchall()
-    except Exception as e:
+    except:
         return apology("db access error", 400)
     
     if request.method == "POST":
@@ -515,7 +514,7 @@ def history():
         try:
             with db.connect() as conn:
                 ROWS = conn.execute(stmt2, parameters={"id": trip_id}).fetchall()
-        except Exception as e:
+        except:
             return apology("db access error", 400)
         
         if len(ROWS) != 1:
@@ -533,7 +532,7 @@ def history():
         try:
             with db.connect() as conn:
                 TRIPS = conn.execute(stmt, parameters={"id": id}).fetchall()
-        except Exception as e:
+        except:
             return apology("db access error", 400)
         
         print(TRIPS)
