@@ -1,11 +1,11 @@
 import openai
 import os
-import json
+#import json
 #import requests
 import sqlalchemy
 import time
 
-from flask import Flask, redirect, render_template, request, url_for, make_response, Response, stream_template
+from flask import Flask, redirect, render_template, request, url_for, make_response, Response, stream_template, jsonify
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 #from oauthlib.oauth2 import WebApplicationClient
@@ -462,7 +462,13 @@ def generate():
             return apology("db insert error", 400)
         '''
 
-        return render_template("stream.html", your_destination=destination, your_prompt=PROMPT)
+        return render_template(
+            "stream.html", 
+            your_prompt=PROMPT, 
+            your_destination=destination,
+            your_month=month,
+            your_duration=duration,
+            )
     
     # User reached route via GET (as by clicking a link or via redirect)
     else:
@@ -474,14 +480,23 @@ def generate():
 @login_required
 def stream():
 
-    body = request.data.decode('utf-8')  # Decode the request data
-    print(body)    
-    
+    #body = request.data.decode('utf-8')  # Decode the request data
+    data = request.get_json()  # Get the JSON data from the request body
+
+    prompt = data.get("prompt")
+    print(prompt)
+    destination = data.get("destination")
+    print(destination)
+    month = data.get("month")
+    print(month)
+    duration = data.get("duration")   
+    print(duration)
+
     def event_stream():
         # Init a list for all the collected text
         collected_text = []
         # For every partial API response
-        for line in send_prompt(body):
+        for line in send_prompt(prompt):
             # Extract text
             bad_text = line.choices[0].delta.get("content", "")
             # Convert text into HTML friendly
