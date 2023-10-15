@@ -1,11 +1,11 @@
 import openai
 import os
-#import json
+import json
 #import requests
 import sqlalchemy
 import time
 
-from flask import Flask, redirect, render_template, request, url_for, make_response, Response
+from flask import Flask, redirect, render_template, request, url_for, make_response, Response, stream_template
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 #from oauthlib.oauth2 import WebApplicationClient
@@ -378,6 +378,16 @@ def change_password():
     return redirect(url_for("account"))
 
 
+def send_prompt(prompt):
+    return openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are Cicero, an experienced travel guide who has visited the whole world. Use a professional, but friendly tone."},
+                {"role": "user", "content": f"{prompt}"}
+            ],
+            stream=True
+        )
+
 @app.route("/generate", methods=["GET", "POST"])
 @login_required
 def generate():
@@ -421,7 +431,7 @@ def generate():
         interests_list = interests_list.rstrip(", ")
 
 
-        # Prompt generation        
+        # Prompt generation      
         PROMPT = f"Please provide me with personalized advice for my next holiday to {destination}.\
             I will be there in {month} for {duration}.\
             My interests are: {interests}.\
@@ -436,43 +446,9 @@ def generate():
             All of the above should also be relevant to the moment of the year I'm visiting.\
             For example you would suggest attending the cherry trees blossom if I were to go to Tokio at the end of March."
 
-        # TESTING: Record the time before the request is sent
-        #start_time = time.time()
         
-        # Query ChatGPT API        
-        completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are Cicero, an experienced travel guide who has visited the whole world. Use a professional, but friendly tone."},
-                {"role": "user", "content": f"{PROMPT}"}
-            ],
-            stream=True
-        )
-
-        # Create variables to collect the stream of chunks
-        collected_chunks = []
-        collected_messages = []
-
-        # Iterate through the stream of responses
-        for chunk in completion:
-            # TESTING:
-            #chunk_time = time.time() - start_time  # calculate the time delay of the chunk
-            collected_chunks.append(chunk)  # save the event response
-            chunk_message = chunk['choices'][0]['delta']  # extract the message
-            collected_messages.append(chunk_message)  # save the message
-            # TESTING:
-            #print(f"Message received {chunk_time:.2f} seconds after request: {chunk_message}")  # print the delay and text
-
-        # TESTING:
-        #print(f"Full response received {chunk_time:.2f} seconds after request")
-        full_reply_content = ''.join([m.get('content', '') for m in collected_messages])
-        # TESTING:
-        #print(f"Full conversation received: {full_reply_content}")
-
-        # Cleanup output
-        OUTPUT = full_reply_content.replace("\n", '<br>')
-
-        # Set some variables
+        '''
+        # Set some variables for the db insertion
         user_id = current_user.get_id()
         timestamp = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
 
@@ -484,14 +460,42 @@ def generate():
                 conn.commit()
         except:
             return apology("db insert error", 400)
+        '''
 
-        
-        return render_template("/output.html", your_destination=destination, output=OUTPUT)
-
+        return render_template("stream.html", your_destination=destination, your_prompt=PROMPT)
+    
     # User reached route via GET (as by clicking a link or via redirect)
     else:
 
         return render_template("/generate.html", interests=INTERESTS, months=MONTHS, duration=DURATION)
+
+
+@app.route("/stream", methods=["POST"])
+@login_required
+def stream():
+
+    body = request.data.decode('utf-8')  # Decode the request data
+    print(body)    
+    
+    def event_stream():
+        # Init a list for all the collected text
+        collected_text = []
+        # For every partial API response
+        for line in send_prompt(body):
+            # Extract text
+            bad_text = line.choices[0].delta.get("content", "")
+            # Convert text into HTML friendly
+            text = bad_text.replace("\n", '<br>')
+            # Append to list of collected text
+            collected_text.append(text)
+            # If text is not empty
+            if len(text):
+                yield text
+
+        #full_reply_content = ''.join(collected_text)
+        #OUTPUT = full_reply_content.replace("\n", '<br>')
+
+    return Response(event_stream(), mimetype="text/event-stream")
 
 
 @app.route("/history", methods=["GET", "POST"])

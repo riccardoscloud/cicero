@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Stream
+{% endblock %}
+
+{% block main %}
+
+<div class="header">
+    <h1>Your trip to {{ your_destination }}</h1>
+</div>
+<div class="container">
+        <div id="result">
+
+        </div>    
+</div>
+
+<!-- hidden field to "hold" the prompt data -->
+<input type="hidden"  id="prompt" value="{{ your_prompt }}">
+
+
+<script>
+
+    // Get the position where the stream will go
+    const chatlog = document.querySelector("#result");
+    
+    // Get the user's message from the form
+    const message = document.querySelector("#prompt").value;
+
+    async function load_stream() {
+
+        // Send a request to the Flask server with the user's message
+        const response = await fetch("/stream", {
+            method: "POST",
+            body: JSON.stringify({ body: message }), // Send message in the request body
+            headers: {
+                'Content-Type': 'application/json' // Set the content type
+            }
+        });
+
+        // Create a new TextDecoder to decode the streamed response text
+        const decoder = new TextDecoder();
+
+        // Set up a new ReadableStream to read the response body
+        const reader = response.body.getReader();
+        let chunks = "";
+
+        // Read the response stream as chunks and append them to the chat log
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks += decoder.decode(value);
+            chatlog.innerHTML = chunks;
+        }
+    };
+
+    window.onload = function() {
+        setTimeout(load_stream, 1000)
+    }
+
+</script>
+
+{% endblock %}
