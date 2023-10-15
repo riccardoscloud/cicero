@@ -492,6 +492,9 @@ def stream():
     duration = data.get("duration")   
     print(duration)
 
+    user_id = current_user.get_id()
+    timestamp = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
+
     def event_stream():
         # Init a list for all the collected text
         collected_text = []
@@ -507,8 +510,18 @@ def stream():
             if len(text):
                 yield text
 
-        #full_reply_content = ''.join(collected_text)
-        #OUTPUT = full_reply_content.replace("\n", '<br>')
+        # Collect full API response
+        full_output = ''.join(collected_text)
+
+        # Insert trip into database
+        try:
+            with db.connect() as conn:
+                stmt = sqlalchemy.text("INSERT INTO trips (user_id, generation_ts, destination, month, duration, travel_plan) VALUES (:id, :ts, :destination, :month, :duration, :travel_plan)")
+                conn.execute(stmt, parameters={"id": user_id, "ts": timestamp, "destination": destination, "month": month, "duration": duration, "travel_plan": full_output})
+                conn.commit()
+        except:
+            return apology("db insert error", 400)
+        
 
     return Response(event_stream(), mimetype="text/event-stream")
 
