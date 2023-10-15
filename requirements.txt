@@ -1,14 +1,10 @@
 Flask
 Flask-Login
-#Flask-SQLAlchemy
-#sqlalchemy-pytds
 SQLAlchemy
 requests
 openai
 #oauthlib
 pyOpenSSL
-#python-tds
-#bitarray
 python-dotenv
 werkzeug==2.2
 gunicorn

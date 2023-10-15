@@ -1,11 +1,8 @@
 import openai
 import os
-#import json
-#import requests
 import sqlalchemy
-import time
 
-from flask import Flask, redirect, render_template, request, url_for, make_response, Response, stream_template, jsonify
+from flask import Flask, redirect, render_template, request, url_for, Response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 #from oauthlib.oauth2 import WebApplicationClient
@@ -15,68 +12,34 @@ from datetime import datetime
 
 from helpers import apology, email_check, password_check
 
-# Load env variables
+# SETUP: Load .env
 load_dotenv()
 
-# OpenAI setup
+# SETUP: OpenAI
+# - Define variables
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 openai.Model.list()
 
+# Define function for calling the API with custom prompt
+def send_prompt(prompt):
+    return openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are Cicero, an experienced travel guide who has visited the whole world. Use a professional, but friendly tone."},
+                {"role": "user", "content": f"{prompt}"}
+            ],
+            stream=True
+        )
+
+# FUTURE - SETUP: Google OAuth
 """
-# Google OAuth setup
+# - Set variables
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DISCOVERY_URL = ("https://accounts.google.com/.well-known/openid-configuration")
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
-"""
 
-# Application setup
-app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', debug=True)
-
-# User session management setup
-login_manager = LoginManager()
-login_manager.init_app(app)
-
-# SQLAlchemy setup
-# Generate the engine
-db = create_engine("sqlite:///database.db")
-
-# Define User class
-class User(UserMixin):
-    def __init__(self, id, name, email, profile_pic):
-        self.id = id
-        self.name = name
-        self.email = email
-        self.profile_pic = profile_pic
-
-    @staticmethod
-    def get(user_id):
-
-        stmt = sqlalchemy.text("SELECT * FROM users WHERE cicero_id = :id")
-        try:
-            with db.connect() as conn:
-                rows = conn.execute(stmt, parameters={"id": user_id}).fetchall()
-        except:
-            return apology("db access error", 400)
-
-        if len(rows) != 1:
-            return None
-
-        user = User(rows[0][0], rows[0][2], rows[0][3], rows[0][4])
-
-        return user
-
-# Flask-Login helper to retrieve a user from db
-@login_manager.user_loader
-def load_user(user_id):
-    return User.get(user_id)
-
-"""
-# Retrieve Google's provider configuration
+# - Retrieve Google's provider configuration
 def get_google_provider_cfg():
     try:
         return requests.get(GOOGLE_DISCOVERY_URL).json()
@@ -84,12 +47,65 @@ def get_google_provider_cfg():
          return apology("google error", 400)
 """
 
+# SETUP: Application
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', debug=True)
+
+# SETUP: User session management
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+# SETUP: SQLAlchemy
+db = create_engine("sqlite:///database.db")
+
+# SETUP: Flask-Login
+# - Define User class
+class User(UserMixin):
+    def __init__(self, id, name, email, profile_pic):
+        self.id = id
+        self.name = name
+        self.email = email
+        self.profile_pic = profile_pic
+
+    # Method used by login_manager: retrieve user object by its id
+    @staticmethod
+    def get(user_id):
+
+        # DB search
+        stmt = sqlalchemy.text("SELECT * FROM users WHERE cicero_id = :id")
+        try:
+            with db.connect() as conn:
+                rows = conn.execute(stmt, parameters={"id": user_id}).fetchall()
+        except:
+            return apology("db access error", 400)
+
+        # Should get only one result
+        if len(rows) != 1:
+            return None
+
+        # Load user from its DB entity
+        user = User(rows[0][0], rows[0][2], rows[0][3], rows[0][4])
+
+        return user
+
+# - Helper to retrieve a user from db
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
+
+# APP ROUTES #
+
+# Homepage
 @app.route("/")
 def index():
     # Simple GET page, with content displayed conditionally of session
     return render_template("/index.html")
 
+# FUTURE: Login with Google
 """
 @app.route("/glogin")
 def glogin():
@@ -182,11 +198,9 @@ def callback():
     return redirect(url_for("index"))
 """
 
-
+# Register a new user
 @app.route("/register", methods=["GET", "POST"])
 def register():
-
-    # Register user
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
@@ -203,7 +217,6 @@ def register():
         if not email_check(request.form.get("email")):
             return apology("not a valid email", 400)
 
-
         # Query database for email
         stmt1 = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
         try:
@@ -212,7 +225,7 @@ def register():
         except:
             return apology("db access error", 400)
 
-        # Ensure username doesn't exist
+        # Ensure account with same email doesn't exist
         if len(rows) > 0:
             return apology("an account with this email already exists", 400)
 
@@ -225,10 +238,12 @@ def register():
         if not check["password_ok"]:
             return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 400)
 
+        # Prepare variables for DB insert
         name = request.form.get("name")
         email = request.form.get("email")
         hash = generate_password_hash(request.form.get("password"))
 
+        # DB insert new user
         try:
             with db.connect() as conn:
                 stmt2 = sqlalchemy.text("INSERT INTO users (name, email, hash) VALUES (:name, :email, :hash)")
@@ -237,14 +252,14 @@ def register():
         except:
             return apology("db insert error", 400)
 
-        # Redirect user to home page
+        # Redirect to login page
         return redirect(url_for("login"))
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("register.html")
 
-
+# Login existing user
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
@@ -271,36 +286,42 @@ def login():
         except:
             return apology("db access error", 400)
 
+        # Check account exists and password hash matches
         if len(rows) != 1 or not check_password_hash(rows[0][5], request.form.get("password")):
             return apology("invalid email and/or password", 403)
 
+        # Load account info into user object
         user = User(rows[0][0], rows[0][2], rows[0][3], rows[0][4])
 
-        # Remember which user has logged in
+        # Load user object into login manager
         login_user(user)
 
-        # Redirect user to home page
+        # Redirect user to homepage
         return redirect(url_for("index"))
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("login.html")
 
-
+# Logout of current session
 @app.route("/logout")
 @login_required
 def logout():
+
+    # Logout using login manager
     logout_user()
+
+    #Redirect to homepage
     return redirect(url_for("index"))
 
-
+# Account management page
 @app.route("/account")
 @login_required
 def account():
     # Simple GET page
     return render_template("/account.html")
 
-
+# - Function for changing username
 @app.route("/change_name", methods=["POST"])
 @login_required
 def change_name():
@@ -313,7 +334,7 @@ def change_name():
     if not user_name:
         return apology("must provide new user name", 403)
     
-    # Update db record
+    # Update DB record
     stmt = sqlalchemy.text("UPDATE users SET name = :new_name WHERE cicero_id = :id;")
     try:
         with db.connect() as conn:
@@ -322,9 +343,10 @@ def change_name():
     except:
         return apology("db access error", 400)
     
+    # Redirect to account page
     return redirect(url_for("account"))
 
-
+# - Function for changing password
 @app.route("/change_password", methods=["POST"])
 @login_required
 def change_password():
@@ -339,7 +361,7 @@ def change_password():
     if not old_pass:
         return apology("must submit your current password", 403)
     
-    # Check password is valid
+    # Check old password is valid
     stmt1 = sqlalchemy.text("SELECT * FROM users WHERE cicero_id = :id")
     try:
         with db.connect() as conn:
@@ -366,7 +388,7 @@ def change_password():
     # Hash new password
     hash = generate_password_hash(new_pass_1)
 
-    # Update db record
+    # Update DB record
     stmt2 = sqlalchemy.text("UPDATE users SET hash = :new_hash WHERE cicero_id = :id;")
     try:
         with db.connect() as conn:
@@ -375,19 +397,10 @@ def change_password():
     except:
         return apology("db access error", 400)
 
+    # Redirect to account page
     return redirect(url_for("account"))
 
-
-def send_prompt(prompt):
-    return openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are Cicero, an experienced travel guide who has visited the whole world. Use a professional, but friendly tone."},
-                {"role": "user", "content": f"{prompt}"}
-            ],
-            stream=True
-        )
-
+# Page for prompt generation
 @app.route("/generate", methods=["GET", "POST"])
 @login_required
 def generate():
@@ -397,7 +410,7 @@ def generate():
     MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     DURATION = ["1 week", "2 weeks", "3 weeks", "4 weeks"]
 
-    # If POST
+    # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
 
         # Extract variables
@@ -419,17 +432,13 @@ def generate():
         if not interests:
             return apology("you must select at least one interest", 400)
         
-        # Extract variables
+        # Validate interests input and combine in a single string
         interests_list = ""
         for i in interests:
-            
-            # Input validation
             if i not in INTERESTS:
-                return apology("do not mess with the code please", 400)
-            
+                return apology("do not mess with the code please", 400)    
             interests_list += i + ", "
         interests_list = interests_list.rstrip(", ")
-
 
         # Prompt generation      
         PROMPT = f"Please provide me with personalized advice for my next holiday to {destination}.\
@@ -446,22 +455,7 @@ def generate():
             All of the above should also be relevant to the moment of the year I'm visiting.\
             For example you would suggest attending the cherry trees blossom if I were to go to Tokio at the end of March."
 
-        
-        '''
-        # Set some variables for the db insertion
-        user_id = current_user.get_id()
-        timestamp = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
-
-        # Insert trip into database
-        try:
-            with db.connect() as conn:
-                stmt = sqlalchemy.text("INSERT INTO trips (user_id, generation_ts, destination, month, duration, travel_plan) VALUES (:id, :ts, :destination, :month, :duration, :travel_plan)")
-                conn.execute(stmt, parameters={"id": user_id, "ts": timestamp, "destination": destination, "month": month, "duration": duration, "travel_plan": OUTPUT})
-                conn.commit()
-        except:
-            return apology("db insert error", 400)
-        '''
-
+        # Load stream page with necessary variables
         return render_template(
             "stream.html", 
             your_prompt=PROMPT, 
@@ -472,48 +466,53 @@ def generate():
     
     # User reached route via GET (as by clicking a link or via redirect)
     else:
-
+        # Load generate page with data for the form
         return render_template("/generate.html", interests=INTERESTS, months=MONTHS, duration=DURATION)
 
-
+# Stream function for the GPT API
 @app.route("/stream", methods=["POST"])
 @login_required
 def stream():
 
-    #body = request.data.decode('utf-8')  # Decode the request data
-    data = request.get_json()  # Get the JSON data from the request body
+    # Extract body content from the POST fetch request
+    data = request.get_json()
 
+    # Extract variables from body
     prompt = data.get("prompt")
-    print(prompt)
     destination = data.get("destination")
-    print(destination)
     month = data.get("month")
-    print(month)
     duration = data.get("duration")   
-    print(duration)
 
+    # Prepare other variables for DB insert
     user_id = current_user.get_id()
     timestamp = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
 
+    # Define the stream function
     def event_stream():
+
         # Init a list for all the collected text
         collected_text = []
+
         # For every partial API response
         for line in send_prompt(prompt):
+
             # Extract text
             bad_text = line.choices[0].delta.get("content", "")
+
             # Convert text into HTML friendly
             text = bad_text.replace("\n", '<br>')
+
             # Append to list of collected text
             collected_text.append(text)
-            # If text is not empty
+
+            # If text is not empty > yield
             if len(text):
                 yield text
 
-        # Collect full API response
+        # Collect full API response in a single string
         full_output = ''.join(collected_text)
 
-        # Insert trip into database
+        # Insert trip into DB
         try:
             with db.connect() as conn:
                 stmt = sqlalchemy.text("INSERT INTO trips (user_id, generation_ts, destination, month, duration, travel_plan) VALUES (:id, :ts, :destination, :month, :duration, :travel_plan)")
@@ -522,15 +521,16 @@ def stream():
         except:
             return apology("db insert error", 400)
         
-
+    # Stream API response into current page
     return Response(event_stream(), mimetype="text/event-stream")
 
-
+# View previously generated trips
 @app.route("/history", methods=["GET", "POST"])
 @login_required
 def history():
 
-    # Query database for email
+    '''
+    # Query DB for current user's trips
     stmt1 = sqlalchemy.text("SELECT * FROM trips WHERE user_id = :id ORDER BY trip_id DESC")
     id = current_user.get_id()
     try:
@@ -538,9 +538,12 @@ def history():
             TRIPS = conn.execute(stmt1, parameters={"id": id}).fetchall()
     except:
         return apology("db access error", 400)
+    '''
     
+    # User clicked on "View trip" button
     if request.method == "POST":
 
+        # Load trip from DB
         stmt2 = sqlalchemy.text("SELECT * FROM trips WHERE trip_id = :id")
         trip_id = request.form.get("trip_id")
         try:
@@ -549,42 +552,45 @@ def history():
         except:
             return apology("db access error", 400)
         
+        # Should return only 1 trip per each trip_id
         if len(ROWS) != 1:
             return apology("form error", 400)
         
+        # Setup variables for output page
         destination = ROWS[0][3]
         OUTPUT = ROWS[0][6]
 
+        # Load output page to display selected trip
         return render_template("output.html", your_destination=destination, output=OUTPUT)
     
+    # User reached route via GET (as by clicking a link or via redirect) 
     else:
-        # Query database for email
-        stmt = sqlalchemy.text("SELECT * FROM trips WHERE user_id = :id ORDER BY trip_id DESC")
+
+        # Query DB for current user's trips
+        stmt2 = sqlalchemy.text("SELECT * FROM trips WHERE user_id = :id ORDER BY trip_id DESC")
         id = current_user.get_id()
         try:
             with db.connect() as conn:
-                TRIPS = conn.execute(stmt, parameters={"id": id}).fetchall()
+                TRIPS = conn.execute(stmt2, parameters={"id": id}).fetchall()
         except:
             return apology("db access error", 400)
-        
-        print(TRIPS)
 
         # Return history page with list of trips (dicts)
         return render_template("/history.html", trips=TRIPS)
 
-
+# Simple FAQ page
 @app.route("/faq")
 def faq():
     # Simple GET page
     return render_template("/faq.html")
 
-
+# Simple Privacy Policy page
 @app.route("/privacy")
 def privacy():
     # Simple GET page
     return render_template("/privacy.html")
 
-
+# Simple T&Cs page
 @app.route("/terms")
 def terms():
     # Simple GET page
