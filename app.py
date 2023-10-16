@@ -194,6 +194,10 @@ def login():
         except:
             return apology("db access error", 400)
 
+        # If user has a Google account and no password set
+        if len(rows) == 1 and (not rows[0][5] or rows[0][5] == ""):
+            return apology("password not set: login with google again")
+
         # Check account exists and password hash matches
         if len(rows) != 1 or not check_password_hash(rows[0][5], request.form.get("password")):
             return apology("invalid email and/or password", 403)
@@ -313,7 +317,7 @@ def callback():
         # Retrieve from DB
         try:
             with db.connect() as conn:
-                rows = conn.execute(stmt1, parameters={"id": unique_id}).fetchall()
+                rows = conn.execute(stmt1, parameters={"email": users_email}).fetchall()
         except:
             return apology("db search error", 400)
         
