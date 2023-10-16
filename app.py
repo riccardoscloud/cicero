@@ -1,11 +1,13 @@
 import openai
 import os
 import sqlalchemy
+import requests
+import json
 
 from flask import Flask, redirect, render_template, request, url_for, Response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
-#from oauthlib.oauth2 import WebApplicationClient
+from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from datetime import datetime
@@ -31,8 +33,7 @@ def send_prompt(prompt):
             stream=True
         )
 
-# FUTURE - SETUP: Google OAuth
-"""
+# SETUP: Google OAuth
 # - Set variables
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
@@ -45,7 +46,7 @@ def get_google_provider_cfg():
         return requests.get(GOOGLE_DISCOVERY_URL).json()
     except:
          return apology("google error", 400)
-"""
+
 
 # SETUP: Application
 app = Flask(__name__)
@@ -104,99 +105,6 @@ def load_user(user_id):
 def index():
     # Simple GET page, with content displayed conditionally of session
     return render_template("/index.html")
-
-# FUTURE: Login with Google
-"""
-@app.route("/glogin")
-def glogin():
-    # Find out what URL to hit for Google login
-    google_provider_cfg = get_google_provider_cfg()
-    authorization_endpoint = google_provider_cfg["authorization_endpoint"]
-
-    # Use library to construct the request for Google login and provide
-    # scopes that let you retrieve user's profile from Google
-    request_uri = client.prepare_request_uri(
-        authorization_endpoint,
-        redirect_uri=request.base_url + "/callback",
-        scope=["openid", "email", "profile"],
-    )
-    return redirect(request_uri)
-
-#db: sqlalchemy.engine.base.Engine
-@app.route("/glogin/callback")
-def callback():
-    # Get authorization code Google sent back to you
-    code = request.args.get("code")
-
-    # Find out what URL to hit to get tokens that allow you to ask for
-    # things on behalf of a user
-    google_provider_cfg = get_google_provider_cfg()
-    token_endpoint = google_provider_cfg["token_endpoint"]
-
-    # Prepare and send a request to get tokens
-    token_url, headers, body = client.prepare_token_request(
-        token_endpoint,
-        authorization_response=request.url,
-        redirect_url=request.base_url,
-        code=code
-    )
-    token_response = requests.post(
-        token_url,
-        headers=headers,
-        data=body,
-        auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
-    )
-
-    # Parse the tokens
-    client.parse_request_body_response(json.dumps(token_response.json()))
-
-    # Find and hit the URL from Google that gives the user's profile information
-    userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
-    uri, headers, body = client.add_token(userinfo_endpoint)
-    userinfo_response = requests.get(uri, headers=headers, data=body)
-
-    # Confirm email is verified, then gather user information
-    if userinfo_response.json().get("email_verified"):
-        unique_id = userinfo_response.json()["sub"]
-        users_email = userinfo_response.json()["email"]
-        picture = userinfo_response.json()["picture"]
-        users_name = userinfo_response.json()["given_name"]
-    else:
-        return apology("User email not available or not verified by Google.", 400)
-    
-    # Find user if already in db
-    stmt1 = sqlalchemy.text("SELECT * FROM users WHERE id = :id")
-    try:
-        with db.connect() as conn:
-            rows = conn.execute(stmt1, parameters={"id": unique_id}).fetchall()
-    except:
-        return apology("db search error", 400)
-    
-    # If 1 user found, use it
-    if len(rows) == 1:
-        user = User(rows[0][1], rows[0][2], rows[0][3], rows[0][4])
-    
-    # If no user found, create new entry
-    elif len(rows) == 0:
-        user = User(id=unique_id, name=users_name, email=users_email, profile_pic=picture)
-        try:
-            with db.connect() as conn:
-                stmt2 = sqlalchemy.text("INSERT INTO users (id, name, email, profile_pic) VALUES (:id, :name, :email, :profile_pic)")
-                conn.execute(stmt2, parameters={"id": unique_id, "name": users_name, "email": users_email, "profile_pic": picture})
-                conn.commit()
-        except:
-            return apology("db insert error", 400)
-        
-    # Otherwise, return error
-    else:
-        return apology("db error", 400)
-        
-    # Begin user session by logging the user in
-    login_user(user)
-
-    # Send user back to homepage
-    return redirect(url_for("index"))
-"""
 
 # Register a new user
 @app.route("/register", methods=["GET", "POST"])
@@ -302,6 +210,126 @@ def login():
     # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("login.html")
+
+# Google Oauth - User clicks on "Login with Google"
+@app.route("/glogin", methods=["POST"])
+def glogin():
+    
+    # Find out what URL to hit for Google login
+    google_provider_cfg = get_google_provider_cfg()
+    authorization_endpoint = google_provider_cfg["authorization_endpoint"]
+
+    # Use library to construct the request for Google login and provide
+    # scopes that let you retrieve user's profile from Google
+    request_uri = client.prepare_request_uri(
+        authorization_endpoint,
+        redirect_uri=request.base_url + "/callback",
+        scope=["openid", "email", "profile"],
+    )
+    return redirect(request_uri)
+
+# Google OAuth - Google sends back user's data
+@app.route("/glogin/callback")
+def callback():
+    # Get authorization code Google sent back to you
+    code = request.args.get("code")
+
+    # Find out what URL to hit to get tokens that allow you to ask for
+    # things on behalf of a user
+    google_provider_cfg = get_google_provider_cfg()
+    token_endpoint = google_provider_cfg["token_endpoint"]
+
+    # Prepare and send a request to get tokens
+    token_url, headers, body = client.prepare_token_request(
+        token_endpoint,
+        authorization_response=request.url,
+        redirect_url=request.base_url,
+        code=code
+    )
+    token_response = requests.post(
+        token_url,
+        headers=headers,
+        data=body,
+        auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
+    )
+
+    # Parse the tokens
+    client.parse_request_body_response(json.dumps(token_response.json()))
+
+    # Find and hit the URL from Google that gives the user's profile information
+    userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
+    uri, headers, body = client.add_token(userinfo_endpoint)
+    userinfo_response = requests.get(uri, headers=headers, data=body)
+
+    # Confirm email is verified, then gather user information
+    if userinfo_response.json().get("email_verified"):
+        unique_id = userinfo_response.json()["sub"]
+        users_email = userinfo_response.json()["email"]
+        picture = userinfo_response.json()["picture"]
+        users_name = userinfo_response.json()["given_name"]
+    else:
+        return apology("User email not available or not verified by Google.", 400)
+    
+    # Find user if already in DB
+    stmt1 = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
+    try:
+        with db.connect() as conn:
+            rows = conn.execute(stmt1, parameters={"email": users_email}).fetchall()
+    except:
+        return apology("db search error", 400)
+    
+    # If 1 user found
+    if len(rows) == 1:
+
+        # If DB record doesn't already have Google's info (was created locally)
+        if not rows[0][1] or rows[0][1] == "":
+
+            # Update it
+            stmt2 = sqlalchemy.text("UPDATE users SET google_id = :g_id, profile_pic = :profile_pic WHERE email = :email")
+            try:
+                with db.connect() as conn:
+                    conn.execute(stmt2, parameters={"g_id": unique_id, "profile_pic": picture, "email": users_email})
+                    conn.commit()
+            except:
+                return apology("db search error", 400)
+
+
+
+        # Load account info into user object
+        user = User(rows[0][0], rows[0][2], rows[0][3], rows[0][4])
+    
+    # If no user found, create new entry
+    elif len(rows) == 0:
+        
+        # Insert into DB
+        try:
+            with db.connect() as conn:
+                stmt3 = sqlalchemy.text("INSERT INTO users (google_id, name, email, profile_pic) VALUES (:id, :name, :email, :profile_pic)")
+                conn.execute(stmt3, parameters={"id": unique_id, "name": users_name, "email": users_email, "profile_pic": picture})
+                conn.commit()
+        except:
+            return apology("db insert error", 400)
+        
+        # Retrieve from DB
+        try:
+            with db.connect() as conn:
+                rows = conn.execute(stmt1, parameters={"id": unique_id}).fetchall()
+        except:
+            return apology("db search error", 400)
+        
+        # If 1 user found, load account info into user object
+        if len(rows) == 1:
+            user = User(rows[0][0], rows[0][2], rows[0][3], rows[0][4])
+        
+    # Otherwise, return error
+    else:
+        return apology("db error", 400)
+        
+    # Load user object into login manager
+    login_user(user)
+
+    # Send user back to homepage
+    return redirect(url_for("index"))
 
 # Logout of current session
 @app.route("/logout")

@@ -3,7 +3,7 @@ Flask-Login
 SQLAlchemy
 requests
 openai
-#oauthlib
+oauthlib
 pyOpenSSL
 python-dotenv
 werkzeug==2.2
