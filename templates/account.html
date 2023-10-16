@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Account
+{% endblock %}
+
+{% block main %}
+<div class="container">
+    <div class="section">
+        <form action="/change_name" method="post">
+            <div>
+                <br>
+                Your current username is: {{ current_user.name }}
+                <br>
+                Change your username here:
+                <br><br>
+            </div>
+            <div class="mb-3">
+                <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="name" name="name" placeholder="New username" type="text">
+            </div>
+            <button class="btn btn-primary" type="submit">Save username</button>
+            <br><br>
+        </form>
+    </div>
+    <div class="section">
+        <form action="/change_password" method="post">
+            <div>
+                <br>
+                Change your password here:
+                <br><br>
+            </div>
+            <div class="mb-3">
+                <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="old_password_1" name="old_password" placeholder="Current password" type="password">
+            </div>
+            <div class="mb-3">
+                <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="old_password_2" name="new_password_1" placeholder="New password" type="password">
+            </div>
+            <div class="mb-3">
+                <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="new_password" name="new_password_2" placeholder="Retype new password" type="password">
+            </div>
+            <button class="btn btn-primary" type="submit">Save password</button>
+            <br><br>
+        </form>
+    </div>
+</div>
+{% endblock %}

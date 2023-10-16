@@ -51,10 +51,9 @@ body {
 .container {
     margin-left: auto;
     margin-right: auto;
-    padding-left: 15px;
-    padding-right: 15px;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
     text-align: center;
-    width: 90%;
 }
 
 .header {
@@ -70,8 +69,8 @@ body {
 
 .section {
     padding-bottom: 1rem;
-    padding-left: 2rem;
-    padding-right: 2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
     padding-top: 0.5rem;
 }
 

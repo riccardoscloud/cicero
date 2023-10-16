@@ -9,7 +9,7 @@
     <h1>Tell Cicero about your trip</h1>
 </div>
 <div class="container">
-    <form action="/generate" method="POST">
+    <form action="/generate" id="prompt-form" method="POST">
         <div class="input-group mb-3">
             <span class="input-group-text vw-100">Your destination(s)</span>
             <input autocomplete="off" autofocus class="form-control vw-100" id="destination" name="destination" placeholder="One or more..." type="text">
@@ -46,5 +46,4 @@
         <button class="btn btn-primary" type="submit">Submit</button>
     </form>
 </div>
-
 {% endblock %}

@@ -1,4 +1,11 @@
-cs50
 Flask
+Flask-Login
+SQLAlchemy
 requests
 openai
+oauthlib
+pyOpenSSL
+python-dotenv
+werkzeug==2.2
+gunicorn
+wheel

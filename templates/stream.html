@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Stream
+{% endblock %}
+
+{% block main %}
+
+<div class="header">
+    <h1>Your trip to {{ your_destination }}</h1>
+</div>
+<div class="container">
+        <div id="result">
+
+        </div>    
+</div>
+
+<!-- hidden field to "hold" the prompt data -->
+<input type="hidden"  id="prompt" value="{{ your_prompt }}">
+<input type="hidden"  id="destination" value="{{ your_destination }}">
+<input type="hidden"  id="month" value="{{ your_month }}">
+<input type="hidden"  id="duration" value="{{ your_duration }}">
+
+
+<script>
+
+    // Get the position where the stream will go
+    const chatlog = document.querySelector("#result");
+    
+    // Load the variables to be sent with the POST request
+    const post_prompt = document.querySelector("#prompt").value;
+    const post_destination = document.querySelector("#destination").value;
+    const post_month = document.querySelector("#month").value;
+    const post_duration = document.querySelector("#duration").value;
+
+    // Create an object to hold the variables
+    const post_data = {
+            prompt: post_prompt,
+            destination: post_destination,
+            month: post_month,
+            duration: post_duration
+        };
+
+    async function load_stream() {
+
+        // Send a POST request to the Flask server with the user's variables
+        const response = await fetch("/stream", {
+            method: "POST",
+            body: JSON.stringify(post_data), // Send variables in the request body
+            headers: {
+                'Content-Type': 'application/json' // Set the content type
+            }
+        });
+
+        // Create a new TextDecoder to decode the streamed response text
+        const decoder = new TextDecoder();
+
+        // Set up a new ReadableStream to read the response body
+        const reader = response.body.getReader();
+        let chunks = "";
+
+        // Read the response stream as chunks and append them to the chat log
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks += decoder.decode(value);
+            chatlog.innerHTML = chunks;
+        }
+    };
+
+    window.onload = function() {
+        setTimeout(load_stream, 100)
+    }
+
+</script>
+
+{% endblock %}

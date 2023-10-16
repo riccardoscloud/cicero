@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    History
+{% endblock %}
+
+{% block main %}
+
+    <div class="header">
+        <h1>Your trips</h1>
+    </div>
+
+    <form action="/history" method="post">
+    {% for trip in trips %}
+        <div class="section">
+            <div class="container text-center">
+                <div class="row">
+                    <div class="col py-lg-2" style="border-style: double; border-color: black; font-weight: bold; font-size: large; background-color: #459f09; color: white;">{{ trip["destination"] }}</div>
+                </div>
+                <div class="row">
+                    <div class="col" style="border-style: double; font-weight: bold; background-color: #66cf20">{{ trip["month"] }}</div>
+                    <div class="col" style="border-style: double; font-weight: bold; background-color: #66cf20">{{ trip["duration"] }}</div>
+                </div>
+                <div class="row">
+                    <div class="col" style="border-style: double; font-size: small;"><a style="vertical-align: middle">Created: {{ trip["generation_ts"] }}</a></div>
+                    <div class="col" style="border-style: double; font-size: small; vertical-align: middle;""><button class="btn btn-sm" id="trip_id" name="trip_id" value="{{ trip['trip_id'] }}" type="submit">View trip</button></div> 
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </form>
+
+{% endblock %}
