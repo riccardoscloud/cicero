@@ -97,9 +97,7 @@ class User(UserMixin):
 def load_user(user_id):
     return User.get(user_id)
 
-
 # APP ROUTES #
-
 # Homepage
 @app.route("/")
 def index():
@@ -485,7 +483,10 @@ def generate():
             - etc..\
             3. A final paragraph with a proposed schedule for my trip, which must be relevant to my interests.\
             All of the above should also be relevant to the moment of the year I'm visiting.\
-            For example you would suggest attending the cherry trees blossom if I were to go to Tokio at the end of March."
+            For example you would suggest attending the cherry trees blossom if I were to go to Tokio at the end of March.\
+            Please output your response with HTML formatting, for example: the paragraph headers should be in H5, \
+            you also should account for new lines.\
+            Also, make sure to give your warm regards at the end."
 
         # Load stream page with necessary variables
         return render_template(
