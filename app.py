@@ -560,17 +560,6 @@ def stream():
 @app.route("/history", methods=["GET", "POST"])
 @login_required
 def history():
-
-    '''
-    # Query DB for current user's trips
-    stmt1 = sqlalchemy.text("SELECT * FROM trips WHERE user_id = :id ORDER BY trip_id DESC")
-    id = current_user.get_id()
-    try:
-        with db.connect() as conn:
-            TRIPS = conn.execute(stmt1, parameters={"id": id}).fetchall()
-    except:
-        return apology("db access error", 400)
-    '''
     
     # User clicked on "View trip" button
     if request.method == "POST":
