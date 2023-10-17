@@ -45,7 +45,7 @@ def get_google_provider_cfg():
     try:
         return requests.get(GOOGLE_DISCOVERY_URL).json()
     except:
-         return apology("google error", 400)
+         return apology("google internal error", 500)
 
 
 # SETUP: Application
@@ -113,15 +113,15 @@ def register():
 
         # Ensure name was submitted
         if not request.form.get("name"):
-            return apology("must provide name", 400)
+            return apology("must provide name", 403)
         
         # Ensure username was submitted
         if not request.form.get("email"):
-            return apology("must provide email", 400)
+            return apology("must provide email", 403)
          
         # Check email is valid
         if not email_check(request.form.get("email")):
-            return apology("not a valid email", 400)
+            return apology("not a valid email", 403)
 
         # Query database for email
         stmt1 = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
@@ -133,16 +133,16 @@ def register():
 
         # Ensure account with same email doesn't exist
         if len(rows) > 0:
-            return apology("an account with this email already exists", 400)
+            return apology("an account with this email already exists", 403)
 
         # Ensure password was submitted
         if not request.form.get("password") or request.form.get("password") != request.form.get("confirmation"):
-            return apology("must provide two matching passwords", 400)
+            return apology("must provide two matching passwords", 403)
         
         # Ensure password is secure
         check = password_check(request.form.get("password"))
         if not check["password_ok"]:
-            return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 400)
+            return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 403)
 
         # Prepare variables for DB insert
         name = request.form.get("name")
@@ -178,7 +178,7 @@ def login():
         
         # Check email is valid
         if not email_check(request.form.get("email")):
-            return apology("not a valid email", 400)
+            return apology("not a valid email", 403)
 
         # Ensure password was submitted
         elif not request.form.get("password"):
@@ -194,7 +194,7 @@ def login():
 
         # If user has a Google account and no password set
         if len(rows) == 1 and (not rows[0][5] or rows[0][5] == ""):
-            return apology("password not set: login with google again")
+            return apology("password not set: login with google again", 403)
 
         # Check account exists and password hash matches
         if len(rows) != 1 or not check_password_hash(rows[0][5], request.form.get("password")):
@@ -270,7 +270,7 @@ def callback():
         picture = userinfo_response.json()["picture"]
         users_name = userinfo_response.json()["given_name"]
     else:
-        return apology("User email not available or not verified by Google.", 400)
+        return apology("user email not available or not verified by Google.", 400)
     
     # Find user if already in DB
     stmt1 = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
@@ -278,7 +278,7 @@ def callback():
         with db.connect() as conn:
             rows = conn.execute(stmt1, parameters={"email": users_email}).fetchall()
     except:
-        return apology("db search error", 400)
+        return apology("db access error", 400)
     
     # If 1 user found
     if len(rows) == 1:
@@ -293,7 +293,7 @@ def callback():
                     conn.execute(stmt2, parameters={"g_id": unique_id, "profile_pic": picture, "email": users_email})
                     conn.commit()
             except:
-                return apology("db search error", 400)
+                return apology("db access error", 400)
 
 
 
@@ -317,7 +317,7 @@ def callback():
             with db.connect() as conn:
                 rows = conn.execute(stmt1, parameters={"email": users_email}).fetchall()
         except:
-            return apology("db search error", 400)
+            return apology("db access error", 400)
         
         # If 1 user found, load account info into user object
         if len(rows) == 1:
@@ -325,7 +325,7 @@ def callback():
         
     # Otherwise, return error
     else:
-        return apology("db error", 400)
+        return apology("db internal error", 400)
         
     # Load user object into login manager
     login_user(user)
@@ -404,7 +404,7 @@ def change_password():
     
     # Ensure new password was submitted and is confirmed
     if not new_pass_1 or new_pass_1 != new_pass_2:
-        return apology("must provide two matching passwords", 400)
+        return apology("must provide two matching passwords", 403)
     
     # Check new password is different from old one
     if new_pass_1 == old_pass:
@@ -413,7 +413,7 @@ def change_password():
     # Check new password is secure
     check = password_check(new_pass_1)
     if not check["password_ok"]:
-        return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 400)
+        return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 403)
 
     # Hash new password
     hash = generate_password_hash(new_pass_1)
@@ -451,22 +451,22 @@ def generate():
         
         # Input validation
         if not destination:
-            return apology("you must input a destination", 400)
+            return apology("you must input a destination", 403)
         
         if month not in MONTHS:
-                return apology("do not mess with the code please", 400)
+                return apology("do not mess with the code please", 403)
         
         if duration not in DURATION:
-                return apology("do not mess with the code please", 400)
+                return apology("do not mess with the code please", 403)
         
         if not interests:
-            return apology("you must select at least one interest", 400)
+            return apology("you must select at least one interest", 403)
         
         # Validate interests input and combine in a single string
         interests_list = ""
         for i in interests:
             if i not in INTERESTS:
-                return apology("do not mess with the code please", 400)    
+                return apology("do not mess with the code please", 403)    
             interests_list += i + ", "
         interests_list = interests_list.rstrip(", ")
 
@@ -576,7 +576,7 @@ def history():
         
         # Should return only 1 trip per each trip_id
         if len(ROWS) != 1:
-            return apology("form error", 400)
+            return apology("db internal error", 400)
         
         # Setup variables for output page
         destination = ROWS[0][3]
