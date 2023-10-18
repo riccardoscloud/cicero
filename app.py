@@ -11,6 +11,7 @@ from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from datetime import datetime
+from flask_mail import Mail, Message
 
 from helpers import apology, email_check, password_check
 
@@ -61,6 +62,17 @@ login_manager.init_app(app)
 
 # SETUP: SQLAlchemy
 db = create_engine("sqlite:///database.db")
+
+# SETUP: Flask-Mail
+app.config["MAIL_SERVER"] = os.environ.get("MAIL_SERVER")
+app.config["MAIL_PORT"] = os.environ.get("MAIL_PORT")
+app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
+app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
+app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS")
+app.config["MAIL_USE_SSL"] = os.environ.get("MAIL_USE_SSL")
+app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_DEFAULT_SENDER")
+
+mail = Mail(app)
 
 # SETUP: Flask-Login
 # - Define User class
