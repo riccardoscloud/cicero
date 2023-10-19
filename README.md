@@ -22,4 +22,5 @@ This version currently includes:
 - Account page: change username, change password.
 
 TODO:
+- Password reset
 - Handle case where user logs in with Google and then tries with local login
