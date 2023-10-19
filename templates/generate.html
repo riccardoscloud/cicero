@@ -26,8 +26,8 @@
             <span class="w-50">
                 <span class="input-group-text">Duration</span>
                 <select class="form-select" aria-label="Duration" id="duration" name="duration">
-                    {% for weeks in duration %}
-                        <option value="{{ weeks }}">{{ weeks }}</option>
+                    {% for trip_duration in duration %}
+                        <option value="{{ trip_duration }}">{{ trip_duration }}</option>
                     {% endfor %}
                 </select>
             </span>

@@ -450,7 +450,7 @@ def generate():
     # Set lists for input page
     INTERESTS = ["History, Culture and Arts", "Outdoor and Nature", "Food and Dining", "Shopping", "Entertainment and Nightlife", "Sports and Adventure", "Religious and Spiritual Interests", "Family-Friendly Activities", "Wellness and Relaxation"]
     MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-    DURATION = ["1 week", "2 weeks", "3 weeks", "4 weeks"]
+    DURATION = ["A weekend", "One week", "Two weeks", "Three weeks", "Four weeks"]
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
