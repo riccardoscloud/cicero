@@ -20,3 +20,7 @@ This version currently includes:
 - Checking user input: email format, password security.
 - Storing user trips, presenting them on the history page.
 - Account page: change username, change password.
+
+TODO:
+- Password reset
+- Handle case where user logs in with Google and then tries with local login

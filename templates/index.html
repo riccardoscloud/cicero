@@ -13,20 +13,21 @@
     <h1>Welcome to Cicero</h1>
 </div>
 <div class="container">
-        This is Cicero, your powerful new travel companion!<br>
-        Cicero knows a lot about the world, and he wants to help you make the most out of your next holiday.<br>
+
+        Introducing Cicero, your new travel companion!<br>
+        Cicero is here to share its extensive knowledge and enhance your upcoming vacations.<br>
         <br>
-        Have you ever booked a trip to an awesome destination, visited some popular places...<br>
-        But then felt that, if only you spent some more time researching...<br>
-        You could've done and seen much more?<br>
+        Have you ever booked a trip to a fantastic destination, explored the popular spots, only to realize you missed out on some local gems?<br>
+        With Cicero by your side, you'll save time researching and make the most of every trip.<br>
+        Plan your next adventure with Cicero today!<br>
         <br>
-        Then start planning with Cicero straight away!<br>
+
         {% if current_user.is_authenticated %}
             <form action="/generate" method="GET">
                 <br><button class="btn btn-primary" type="redirect">Generate a new travel plan</button>
             </form>
         {% else %}
-            To start planning, click the buttons below to register or login.<br><br>
+            To start planning, simply use the buttons below for registration or login.<br><br>
             <form action="/login" method="GET" style="display:inline-block;margin-right:10px;">
                 <button class="btn btn-primary" type="redirect">Login</button>
             </form>
