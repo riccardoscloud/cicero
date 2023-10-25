@@ -11,8 +11,7 @@ from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from datetime import datetime
-#from flask_mail import Mail, Message
-import smtplib
+#import smtplib
 
 from helpers import apology, email_check, password_check
 
@@ -73,8 +72,6 @@ app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
 app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS")
 app.config["MAIL_USE_SSL"] = os.environ.get("MAIL_USE_SSL")
 app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_DEFAULT_SENDER")
-
-mail = Mail(app)
 '''
 
 # SETUP: Flask-Login
@@ -633,6 +630,7 @@ def terms():
     # Simple GET page
     return render_template("/terms.html")
 
+'''
 # TEST: Send email
 @app.route("/emailtest")
 def test_email():
@@ -652,3 +650,4 @@ def test_email():
     server.quit()
 
     return "Mail sent"
+    '''
