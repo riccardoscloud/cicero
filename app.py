@@ -656,8 +656,13 @@ email_message.attach(MIMEText(html, "html"))
 email_string = email_message.as_string()
 
 # TEST: Send email
-@app.route("/emailtest", methods = ["POST"])
+@app.route("/send_password_reset", methods = ["POST"])
 def test_email():
+
+    # Define function for generating reset email (above)
+    # Define the below method as a function (args: html, recipient)
+    # Call the second function with args (first function, POSTed email)
+
     server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
     server.set_debuglevel(1)
     server.ehlo()
