@@ -628,6 +628,12 @@ def terms():
     # Simple GET page
     return render_template("/terms.html")
 
+# Password reset form
+@app.route("/password_reset")
+def password_reset():
+    # Simple GET page
+    return render_template("/password_reset.html")
+
 # Define the HTML document
 html = '''
     <html>
@@ -650,7 +656,7 @@ email_message.attach(MIMEText(html, "html"))
 email_string = email_message.as_string()
 
 # TEST: Send email
-@app.route("/emailtest")
+@app.route("/emailtest", methods = ["POST"])
 def test_email():
     server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
     server.set_debuglevel(1)
@@ -659,7 +665,6 @@ def test_email():
     server.ehlo()
 
     server.login(MAIL_USERNAME, MAIL_PASSWORD)
-    #msg = "Subject: Test message 01\n\nFrom: support@cicerotravel.com\n\nHere is a test message from Cicero"
     server.sendmail(
         MAIL_USERNAME,
         MAIL_RECIPIENT,
