@@ -3,6 +3,7 @@ import os
 import sqlalchemy
 import requests
 import json
+import smtplib
 
 from flask import Flask, redirect, render_template, request, url_for, Response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
@@ -11,7 +12,8 @@ from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from datetime import datetime
-#import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from helpers import apology, email_check, password_check
 
@@ -63,16 +65,12 @@ login_manager.init_app(app)
 # SETUP: SQLAlchemy
 db = create_engine("sqlite:///database.db")
 
-'''
-# SETUP: Flask-Mail
-app.config["MAIL_SERVER"] = os.environ.get("MAIL_SERVER")
-app.config["MAIL_PORT"] = os.environ.get("MAIL_PORT")
-app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
-app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
-app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS")
-app.config["MAIL_USE_SSL"] = os.environ.get("MAIL_USE_SSL")
-app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_DEFAULT_SENDER")
-'''
+# SETUP: Mail variables
+MAIL_SERVER = os.environ.get("MAIL_SERVER")
+MAIL_PORT = os.environ.get("MAIL_PORT")
+MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+MAIL_RECIPIENT = os.environ.get("MAIL_RECIPIENT")
 
 # SETUP: Flask-Login
 # - Define User class
@@ -630,24 +628,43 @@ def terms():
     # Simple GET page
     return render_template("/terms.html")
 
-'''
+# Define the HTML document
+html = '''
+    <html>
+        <body>
+            <h1>Test email</h1>
+            <p>Hello, this is a test email from Cicero!</p>
+        </body>
+    </html>
+    '''
+
+# Create a MIMEMultipart class, and set up the From, To, Subject fields
+email_message = MIMEMultipart()
+email_message['From'] = MAIL_USERNAME
+email_message['To'] = MAIL_RECIPIENT
+email_message['Subject'] = "Cicero test email"
+
+# Attach the html doc defined earlier, as a MIMEText html content type to the MIME message
+email_message.attach(MIMEText(html, "html"))
+# Convert it as a string
+email_string = email_message.as_string()
+
 # TEST: Send email
 @app.route("/emailtest")
 def test_email():
-    server = smtplib.SMTP("smtpserver", 587)
+    server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
     server.set_debuglevel(1)
     server.ehlo()
     server.starttls()
     server.ehlo()
 
-    server.login("email", "password")
-    msg = "Subject: Test message 01\n\n\Here is a test message from Cicero"
+    server.login(MAIL_USERNAME, MAIL_PASSWORD)
+    #msg = "Subject: Test message 01\n\nFrom: support@cicerotravel.com\n\nHere is a test message from Cicero"
     server.sendmail(
-        "fromemail",
-        "toemail",
-        msg
+        MAIL_USERNAME,
+        MAIL_RECIPIENT,
+        email_string
     )
     server.quit()
 
     return "Mail sent"
-    '''
