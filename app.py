@@ -15,7 +15,7 @@ from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from helpers import apology, email_check, password_check
+from helpers import apology, email_check, password_check, generate_email_password_reset
 
 # SETUP: Load .env
 load_dotenv()
@@ -70,7 +70,7 @@ MAIL_SERVER = os.environ.get("MAIL_SERVER")
 MAIL_PORT = os.environ.get("MAIL_PORT")
 MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
 MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
-MAIL_RECIPIENT = os.environ.get("MAIL_RECIPIENT")
+#MAIL_RECIPIENT = os.environ.get("MAIL_RECIPIENT")
 
 # SETUP: Flask-Login
 # - Define User class
@@ -634,34 +634,14 @@ def password_reset():
     # Simple GET page
     return render_template("/password_reset.html")
 
-# Define the HTML document
-html = '''
-    <html>
-        <body>
-            <h1>Test email</h1>
-            <p>Hello, this is a test email from Cicero!</p>
-        </body>
-    </html>
-    '''
-
-# Create a MIMEMultipart class, and set up the From, To, Subject fields
-email_message = MIMEMultipart()
-email_message['From'] = MAIL_USERNAME
-email_message['To'] = MAIL_RECIPIENT
-email_message['Subject'] = "Cicero test email"
-
-# Attach the html doc defined earlier, as a MIMEText html content type to the MIME message
-email_message.attach(MIMEText(html, "html"))
-# Convert it as a string
-email_string = email_message.as_string()
-
-# TEST: Send email
+# Send email
 @app.route("/send_password_reset", methods = ["POST"])
 def test_email():
 
-    # Define function for generating reset email (above)
     # Define the below method as a function (args: html, recipient)
-    # Call the second function with args (first function, POSTed email)
+    # Call the function with args (first function, POSTed email)
+
+    MAIL_RECIPIENT = request.form.get("email")
 
     server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
     server.set_debuglevel(1)
@@ -673,8 +653,8 @@ def test_email():
     server.sendmail(
         MAIL_USERNAME,
         MAIL_RECIPIENT,
-        email_string
+        generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT)
     )
     server.quit()
 
-    return "Mail sent"
+    return redirect(url_for("index"))
