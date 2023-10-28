@@ -653,7 +653,7 @@ def test_email():
     server.sendmail(
         MAIL_USERNAME,
         MAIL_RECIPIENT,
-        generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT)
+        generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT, "https://riccardoscloud.com/")
     )
     server.quit()
 
