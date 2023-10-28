@@ -1,9 +1,21 @@
+import os
 import re
+import smtplib
 
 from flask import render_template
+from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from string import Template
+
+# SETUP: Load .env
+load_dotenv()
+
+# SETUP: Mail variables
+MAIL_SERVER = os.environ.get("MAIL_SERVER")
+MAIL_PORT = os.environ.get("MAIL_PORT")
+MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
 
 
 # Render message as an apology to user
@@ -256,3 +268,21 @@ def generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT, BUTTON_LINK):
     email_string = email_message.as_string()
 
     return email_string
+
+def send_email_password_reset(MAIL_RECIPIENT, RESET_LINK):
+    
+    server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
+    server.set_debuglevel(1)
+    server.ehlo()
+    server.starttls()
+    server.ehlo()
+
+    server.login(MAIL_USERNAME, MAIL_PASSWORD)
+    server.sendmail(
+        MAIL_USERNAME,
+        MAIL_RECIPIENT,
+        generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT, RESET_LINK)
+    )
+    server.quit()
+
+    return

@@ -16,3 +16,10 @@ CREATE TABLE trips (
     duration VARCHAR(15) NOT NULL, 
     travel_plan TEXT NOT NULL
     );
+
+CREATE TABLE password_resets (
+    pwd_reset_id INTEGER PRIMARY KEY,
+    user_id INTEGER FOREIGN_KEY REFERENCES users(cicero_id),
+    expiration_ts VARCHAR(20),
+    secret_key VARCHAR(30) NOT NULL
+)

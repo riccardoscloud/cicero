@@ -12,10 +12,9 @@ from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from itsdangerous import URLSafeSerializer
 
-from helpers import apology, email_check, password_check, generate_email_password_reset
+from helpers import apology, email_check, password_check, generate_email_password_reset, send_email_password_reset
 
 # SETUP: Load .env
 load_dotenv()
@@ -636,25 +635,31 @@ def password_reset():
 
 # Send email
 @app.route("/send_password_reset", methods = ["POST"])
-def test_email():
+def send_password_reset():
 
-    # Define the below method as a function (args: html, recipient)
-    # Call the function with args (first function, POSTed email)
-
+    # Extract the email address from the POST request
     MAIL_RECIPIENT = request.form.get("email")
 
-    server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT)
-    server.set_debuglevel(1)
-    server.ehlo()
-    server.starttls()
-    server.ehlo()
+    # Define signing key
+    signing_key = URLSafeSerializer(os.environ.get("SECRET_KEY"))
 
-    server.login(MAIL_USERNAME, MAIL_PASSWORD)
-    server.sendmail(
-        MAIL_USERNAME,
-        MAIL_RECIPIENT,
-        generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT, "https://riccardoscloud.com/")
-    )
-    server.quit()
+    # Query database for email
+    stmt = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
+    try:
+        with db.connect() as conn:
+            rows = conn.execute(stmt, parameters={"email": MAIL_RECIPIENT}).fetchall()
+    except:
+        return apology("db access error", 400)
+    
+    # If the email matches with one account
+    if len(rows) == 1:
+
+        # Extract user_id from DB
+        USER_ID = rows[0][0]
+        # Generate reset string
+        RESET_STRING = signing_key.dumps([USER_ID])
+    
+        # Send the password reset email
+        send_email_password_reset(MAIL_RECIPIENT, RESET_STRING)
 
     return redirect(url_for("index"))
