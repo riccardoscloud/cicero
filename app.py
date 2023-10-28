@@ -3,7 +3,6 @@ import os
 import sqlalchemy
 import requests
 import json
-import smtplib
 
 from flask import Flask, redirect, render_template, request, url_for, Response
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
@@ -11,7 +10,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 from itsdangerous import URLSafeSerializer
 
 from helpers import apology, email_check, password_check, generate_email_password_reset, send_email_password_reset
@@ -656,10 +655,69 @@ def send_password_reset():
 
         # Extract user_id from DB
         USER_ID = rows[0][0]
+
         # Generate reset string
         RESET_STRING = signing_key.dumps([USER_ID])
-    
+
+        # Set an expiration time for the reset code
+        expiration_time = datetime.utcnow() + timedelta(hours=2)
+        EXPIRATION_TS = expiration_time
+        #.strftime("%m-%d-%Y, %H:%M:%S")
+
+        # DB insert new user
+#        try:
+        with db.connect() as conn:
+            stmt1 = sqlalchemy.text("INSERT INTO password_resets (user_id, expiration_ts, secret_key) VALUES (:user_id, :expiration_ts, :secret_key)")
+            conn.execute(stmt1, parameters={"user_id": USER_ID, "expiration_ts": EXPIRATION_TS, "secret_key": RESET_STRING})
+            conn.commit()
+#        except:
+#            return apology("db insert error", 400)
+
         # Send the password reset email
         send_email_password_reset(MAIL_RECIPIENT, RESET_STRING)
 
     return redirect(url_for("index"))
+
+@app.route("/password_reset_callback/<reset_string>", methods = ["GET", "POST"])
+def password_reset_callback(reset_string):
+    
+    if request.method == "POST":
+
+        new_pass_1 = request.form.get("password")
+        new_pass_2 = request.form.get("confirmation")
+
+        # Ensure new password was submitted and is confirmed
+        if not new_pass_1 or new_pass_1 != new_pass_2:
+            return apology("must provide two matching passwords", 403)
+
+        # Check new password is secure
+        check = password_check(new_pass_1)
+        if not check["password_ok"]:
+            return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 403)
+
+        # Hash new password
+        hash = generate_password_hash(new_pass_1)
+
+        # TODO
+        '''
+        # Update DB record
+        stmt2 = sqlalchemy.text("UPDATE users SET hash = :new_hash WHERE cicero_id = :id;")
+        try:
+            with db.connect() as conn:
+                conn.execute(stmt2, parameters={"new_hash": hash, "id": user_id})
+                conn.commit()
+        except:
+            return apology("db access error", 400)
+
+        '''
+
+        # Redirect to account page
+        return redirect(url_for("login"))
+
+    else:
+
+        # TODO : check that reset_string matches db entry
+
+        return render_template("/password_reset_callback.html")
+        
+

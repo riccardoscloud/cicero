@@ -20,6 +20,6 @@ CREATE TABLE trips (
 CREATE TABLE password_resets (
     pwd_reset_id INTEGER PRIMARY KEY,
     user_id INTEGER FOREIGN_KEY REFERENCES users(cicero_id),
-    expiration_ts VARCHAR(20),
+    expiration_ts VARCHAR(30),
     secret_key VARCHAR(30) NOT NULL
-)
+    );

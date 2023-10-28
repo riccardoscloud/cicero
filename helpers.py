@@ -83,7 +83,7 @@ def password_check(password):
     }
 
 # Generates an email for password reset
-def generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT, BUTTON_LINK):
+def generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT, RESET_LINK):
     
     # Define email html
     pre_format_html = Template('''
@@ -199,13 +199,13 @@ def generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT, BUTTON_LINK):
         <td align="center" valign="top" style="padding:0;Margin:0;width:560px">
         <table cellpadding="0" cellspacing="0" width="100%" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:separate;border-spacing:0px;border-radius:5px" role="presentation">
         <tr>
-        <td align="center" style="padding:0;Margin:0;padding-top:10px;padding-bottom:10px"><!--[if mso]><a href=$LINK target="_blank" hidden>
-        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" esdevVmlButton href=$LINK
+        <td align="center" style="padding:0;Margin:0;padding-top:10px;padding-bottom:10px"><!--[if mso]><a href="https://cicerotravel.com/password_reset_callback/"$LINK target="_blank" hidden>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" esdevVmlButton href="https://cicerotravel.com/password_reset_callback/"$LINK
         style="height:44px; v-text-anchor:middle; width:329px" arcsize="14%" stroke="f" fillcolor="#459f09">
         <w:anchorlock></w:anchorlock>
         <center style='color:#ffffff; font-family:arial, "helvetica neue", helvetica, sans-serif; font-size:18px; font-weight:400; line-height:18px; mso-text-raise:1px'>RESET YOUR PASSWORD</center>
         </v:roundrect></a>
-        <![endif]--><!--[if !mso]><!-- --><span class="msohide es-button-border" style="border-style:solid;border-color:#2CB543;background:#459f09;border-width:0px;display:inline-block;border-radius:6px;width:auto;mso-hide:all"><a href=$LINK class="es-button" target="_blank" style="mso-style-priority:100 !important;text-decoration:none;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;color:#FFFFFF;font-size:20px;padding:10px 30px 10px 30px;display:inline-block;background:#459f09;border-radius:6px;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-weight:normal;font-style:normal;line-height:24px;width:auto;text-align:center;mso-padding-alt:0;mso-border-alt:10px solid #459f09;padding-left:30px;padding-right:30px">RESET YOUR PASSWORD</a></span><!--<![endif]--></td>
+        <![endif]--><!--[if !mso]><!-- --><span class="msohide es-button-border" style="border-style:solid;border-color:#2CB543;background:#459f09;border-width:0px;display:inline-block;border-radius:6px;width:auto;mso-hide:all"><a href="https://cicerotravel.com/password_reset_callback/"$LINK class="es-button" target="_blank" style="mso-style-priority:100 !important;text-decoration:none;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;color:#FFFFFF;font-size:20px;padding:10px 30px 10px 30px;display:inline-block;background:#459f09;border-radius:6px;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-weight:normal;font-style:normal;line-height:24px;width:auto;text-align:center;mso-padding-alt:0;mso-border-alt:10px solid #459f09;padding-left:30px;padding-right:30px">RESET YOUR PASSWORD</a></span><!--<![endif]--></td>
         </tr>
         <tr>
         <td align="center" class="es-m-txt-c" style="padding:0;Margin:0;padding-top:10px"><h3 style="Margin:0;line-height:30px;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-size:20px;font-style:normal;font-weight:bold;color:#333333">This link is valid for one use only. Expires in 2 hours.</h3></td>
@@ -254,7 +254,7 @@ def generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT, BUTTON_LINK):
         </html>
     ''')
 
-    html = pre_format_html.substitute(LINK=BUTTON_LINK)
+    html = pre_format_html.substitute(LINK=RESET_LINK)
 
     # Create a MIMEMultipart class, and set up the From, To, Subject fields
     email_message = MIMEMultipart()
