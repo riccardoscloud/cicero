@@ -254,7 +254,7 @@ def generate_email_password_reset(MAIL_USERNAME, MAIL_RECIPIENT, RESET_STRING):
         </html>
     ''')
 
-    FULL_LINK = "https://cicerotravel.com/password_reset_callback/" + RESET_STRING
+    FULL_LINK = "https://cicerotravel.com/password_reset/callback/" + RESET_STRING
 
     html = pre_format_html.substitute(LINK=FULL_LINK)
 

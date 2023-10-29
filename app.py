@@ -645,6 +645,14 @@ def send_password_reset():
     # Extract the email address from the POST request
     MAIL_RECIPIENT = request.form.get("email")
 
+    # Ensure username was submitted
+    if not MAIL_RECIPIENT:
+        return apology("must provide email", 403)
+        
+    # Check email is valid
+    if not email_check(MAIL_RECIPIENT):
+        return apology("not a valid email", 403)
+
     # Query database for email
     stmt = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
     try:
@@ -678,9 +686,9 @@ def send_password_reset():
         # Send the password reset email
         send_email_password_reset(MAIL_RECIPIENT, RESET_STRING)
 
-    return redirect(url_for("index"))
+    return render_template("/password_reset_sent.html")
 
-@app.route("/password_reset_callback/<reset_string>", methods = ["GET", "POST"])
+@app.route("/password_reset/callback/<reset_string>")
 def password_reset_callback(reset_string):
 
     decoded_list = signing_key.loads(reset_string)
@@ -702,6 +710,15 @@ def password_reset_callback(reset_string):
     
     if CURRENT_TS > EXPIRATION_TS:
         return apology("link expired", 400)
+    
+    # Delete row from DB
+    stmt2 = sqlalchemy.text("DELETE FROM password_resets WHERE secret_key = :secret_key")
+    try:
+        with db.connect() as conn:
+            rows = conn.execute(stmt2, parameters={"secret_key": reset_string})
+            conn.commit()
+    except:
+        return apology("db access error", 400)
 
     return render_template("/password_reset_callback.html", user_id=USER_ID)
 
@@ -730,8 +747,6 @@ def password_reset_execution():
         with db.connect() as conn:
             conn.execute(stmt, parameters={"new_hash": hash, "id": USER_ID})
             conn.commit()
-            print(hash)
-            print(USER_ID)
     except:
         return apology("db access error", 400)
 
