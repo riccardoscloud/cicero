@@ -642,7 +642,7 @@ def password_reset():
 @app.route("/send_password_reset", methods = ["POST"])
 def send_password_reset():
 
-    # Extract the email address from the POST request
+    # Extract the email address from the POST request form
     MAIL_RECIPIENT = request.form.get("email")
 
     # Ensure username was submitted
@@ -671,10 +671,10 @@ def send_password_reset():
         expiration_time = datetime.utcnow() + timedelta(hours=2)
         EXPIRATION_TS = expiration_time.strftime(ts_format)
 
-        # Generate reset string
+        # Generate encoded reset string
         RESET_STRING = signing_key.dumps([USER_ID, EXPIRATION_TS])
 
-        # DB insert new user
+        # DB insert new password_reset row
         try:
             with db.connect() as conn:
                 stmt1 = sqlalchemy.text("INSERT INTO password_resets (user_id, expiration_ts, secret_key) VALUES (:user_id, :expiration_ts, :secret_key)")
@@ -691,13 +691,15 @@ def send_password_reset():
 @app.route("/password_reset/callback/<reset_string>")
 def password_reset_callback(reset_string):
 
+    # Extract variables from encoded string
     decoded_list = signing_key.loads(reset_string)
     USER_ID = decoded_list[0]
     EXPIRATION_TS_STRING = decoded_list[1]
+    # Define time variables
     EXPIRATION_TS = datetime.strptime(EXPIRATION_TS_STRING, ts_format)
     CURRENT_TS = datetime.utcnow()
 
-    # Query database for matching password reset string
+    # Query database for matching password_reset string
     stmt1 = sqlalchemy.text("SELECT * FROM password_resets WHERE secret_key = :secret_key")
     try:
         with db.connect() as conn:
@@ -705,13 +707,15 @@ def password_reset_callback(reset_string):
     except:
         return apology("db access error", 400)
     
+    # If no matching DB entry
     if len(rows) != 1:
         return apology("invalid link", 400)
     
+    # If link is expired
     if CURRENT_TS > EXPIRATION_TS:
         return apology("link expired", 400)
     
-    # Delete row from DB
+    # Delete used row from DB
     stmt2 = sqlalchemy.text("DELETE FROM password_resets WHERE secret_key = :secret_key")
     try:
         with db.connect() as conn:
@@ -720,11 +724,13 @@ def password_reset_callback(reset_string):
     except:
         return apology("db access error", 400)
 
+    # Allow user to reset password
     return render_template("/password_reset_callback.html", user_id=USER_ID)
 
 @app.route("/password_reset_execution", methods = ["POST"])
 def password_reset_execution():
 
+    # Extract variables from POST request
     new_pass_1 = request.form.get("password")
     new_pass_2 = request.form.get("confirmation")
     USER_ID = request.form.get("counter")
@@ -741,7 +747,7 @@ def password_reset_execution():
     # Hash new password
     hash = generate_password_hash(new_pass_1)
 
-    # Update DB record
+    # Update DB record with new password
     stmt = sqlalchemy.text("UPDATE users SET hash = :new_hash WHERE cicero_id = :id;")
     try:
         with db.connect() as conn:
@@ -750,7 +756,7 @@ def password_reset_execution():
     except:
         return apology("db access error", 400)
 
-    # Redirect to account page
+    # Redirect to login page
     return redirect(url_for("login"))
     
 
