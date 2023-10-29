@@ -70,6 +70,12 @@ MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
 MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
 #MAIL_RECIPIENT = os.environ.get("MAIL_RECIPIENT")
 
+# Define signing key
+signing_key = URLSafeSerializer(os.environ.get("SECRET_KEY"))
+
+# Define timestamps format
+ts_format = "%m-%d-%Y, %H:%M:%S"
+
 # SETUP: Flask-Login
 # - Define User class
 class User(UserMixin):
@@ -526,7 +532,7 @@ def stream():
 
     # Prepare other variables for DB insert
     user_id = current_user.get_id()
-    timestamp = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
+    timestamp = datetime.utcnow().strftime(ts_format)
 
     # Define the stream function
     def event_stream():
@@ -639,9 +645,6 @@ def send_password_reset():
     # Extract the email address from the POST request
     MAIL_RECIPIENT = request.form.get("email")
 
-    # Define signing key
-    signing_key = URLSafeSerializer(os.environ.get("SECRET_KEY"))
-
     # Query database for email
     stmt = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
     try:
@@ -656,22 +659,21 @@ def send_password_reset():
         # Extract user_id from DB
         USER_ID = rows[0][0]
 
-        # Generate reset string
-        RESET_STRING = signing_key.dumps([USER_ID])
-
         # Set an expiration time for the reset code
         expiration_time = datetime.utcnow() + timedelta(hours=2)
-        EXPIRATION_TS = expiration_time
-        #.strftime("%m-%d-%Y, %H:%M:%S")
+        EXPIRATION_TS = expiration_time.strftime(ts_format)
+
+        # Generate reset string
+        RESET_STRING = signing_key.dumps([USER_ID, EXPIRATION_TS])
 
         # DB insert new user
-#        try:
-        with db.connect() as conn:
-            stmt1 = sqlalchemy.text("INSERT INTO password_resets (user_id, expiration_ts, secret_key) VALUES (:user_id, :expiration_ts, :secret_key)")
-            conn.execute(stmt1, parameters={"user_id": USER_ID, "expiration_ts": EXPIRATION_TS, "secret_key": RESET_STRING})
-            conn.commit()
-#        except:
-#            return apology("db insert error", 400)
+        try:
+            with db.connect() as conn:
+                stmt1 = sqlalchemy.text("INSERT INTO password_resets (user_id, expiration_ts, secret_key) VALUES (:user_id, :expiration_ts, :secret_key)")
+                conn.execute(stmt1, parameters={"user_id": USER_ID, "expiration_ts": EXPIRATION_TS, "secret_key": RESET_STRING})
+                conn.commit()
+        except:            
+            return apology("db insert error", 400)
 
         # Send the password reset email
         send_email_password_reset(MAIL_RECIPIENT, RESET_STRING)
@@ -680,44 +682,60 @@ def send_password_reset():
 
 @app.route("/password_reset_callback/<reset_string>", methods = ["GET", "POST"])
 def password_reset_callback(reset_string):
+
+    decoded_list = signing_key.loads(reset_string)
+    USER_ID = decoded_list[0]
+    EXPIRATION_TS_STRING = decoded_list[1]
+    EXPIRATION_TS = datetime.strptime(EXPIRATION_TS_STRING, ts_format)
+    CURRENT_TS = datetime.utcnow()
+
+    # Query database for matching password reset string
+    stmt1 = sqlalchemy.text("SELECT * FROM password_resets WHERE secret_key = :secret_key")
+    try:
+        with db.connect() as conn:
+            rows = conn.execute(stmt1, parameters={"secret_key": reset_string}).fetchall()
+    except:
+        return apology("db access error", 400)
     
-    if request.method == "POST":
+    if len(rows) != 1:
+        return apology("invalid link", 400)
+    
+    if CURRENT_TS > EXPIRATION_TS:
+        return apology("link expired", 400)
 
-        new_pass_1 = request.form.get("password")
-        new_pass_2 = request.form.get("confirmation")
+    return render_template("/password_reset_callback.html", user_id=USER_ID)
 
-        # Ensure new password was submitted and is confirmed
-        if not new_pass_1 or new_pass_1 != new_pass_2:
-            return apology("must provide two matching passwords", 403)
+@app.route("/password_reset_execution", methods = ["POST"])
+def password_reset_execution():
 
-        # Check new password is secure
-        check = password_check(new_pass_1)
-        if not check["password_ok"]:
-            return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 403)
+    new_pass_1 = request.form.get("password")
+    new_pass_2 = request.form.get("confirmation")
+    USER_ID = request.form.get("counter")
 
-        # Hash new password
-        hash = generate_password_hash(new_pass_1)
+    # Ensure new password was submitted and is confirmed
+    if not new_pass_1 or new_pass_1 != new_pass_2:
+        return apology("must provide two matching passwords", 403)
 
-        # TODO
-        '''
-        # Update DB record
-        stmt2 = sqlalchemy.text("UPDATE users SET hash = :new_hash WHERE cicero_id = :id;")
-        try:
-            with db.connect() as conn:
-                conn.execute(stmt2, parameters={"new_hash": hash, "id": user_id})
-                conn.commit()
-        except:
-            return apology("db access error", 400)
+    # Check new password is secure
+    check = password_check(new_pass_1)
+    if not check["password_ok"]:
+        return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 403)
 
-        '''
+    # Hash new password
+    hash = generate_password_hash(new_pass_1)
 
-        # Redirect to account page
-        return redirect(url_for("login"))
+    # Update DB record
+    stmt = sqlalchemy.text("UPDATE users SET hash = :new_hash WHERE cicero_id = :id;")
+    try:
+        with db.connect() as conn:
+            conn.execute(stmt, parameters={"new_hash": hash, "id": USER_ID})
+            conn.commit()
+            print(hash)
+            print(USER_ID)
+    except:
+        return apology("db access error", 400)
 
-    else:
-
-        # TODO : check that reset_string matches db entry
-
-        return render_template("/password_reset_callback.html")
-        
+    # Redirect to account page
+    return redirect(url_for("login"))
+    
 
