@@ -10,10 +10,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from oauthlib.oauth2 import WebApplicationClient
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
-from datetime import datetime
-#import smtplib
+from datetime import datetime, timedelta
+from itsdangerous import URLSafeSerializer
 
-from helpers import apology, email_check, password_check
+from helpers import apology, email_check, password_check, generate_email_password_reset, send_email_password_reset
 
 # SETUP: Load .env
 load_dotenv()
@@ -63,16 +63,18 @@ login_manager.init_app(app)
 # SETUP: SQLAlchemy
 db = create_engine("sqlite:///database.db")
 
-'''
-# SETUP: Flask-Mail
-app.config["MAIL_SERVER"] = os.environ.get("MAIL_SERVER")
-app.config["MAIL_PORT"] = os.environ.get("MAIL_PORT")
-app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
-app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
-app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS")
-app.config["MAIL_USE_SSL"] = os.environ.get("MAIL_USE_SSL")
-app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_DEFAULT_SENDER")
-'''
+# SETUP: Mail variables
+MAIL_SERVER = os.environ.get("MAIL_SERVER")
+MAIL_PORT = os.environ.get("MAIL_PORT")
+MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+#MAIL_RECIPIENT = os.environ.get("MAIL_RECIPIENT")
+
+# Define signing key
+signing_key = URLSafeSerializer(os.environ.get("SECRET_KEY"))
+
+# Define timestamps format
+ts_format = "%m-%d-%Y, %H:%M:%S"
 
 # SETUP: Flask-Login
 # - Define User class
@@ -530,7 +532,7 @@ def stream():
 
     # Prepare other variables for DB insert
     user_id = current_user.get_id()
-    timestamp = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
+    timestamp = datetime.utcnow().strftime(ts_format)
 
     # Define the stream function
     def event_stream():
@@ -630,24 +632,131 @@ def terms():
     # Simple GET page
     return render_template("/terms.html")
 
-'''
-# TEST: Send email
-@app.route("/emailtest")
-def test_email():
-    server = smtplib.SMTP("smtpserver", 587)
-    server.set_debuglevel(1)
-    server.ehlo()
-    server.starttls()
-    server.ehlo()
+# Password reset form
+@app.route("/password_reset")
+def password_reset():
+    # Simple GET page
+    return render_template("/password_reset.html")
 
-    server.login("email", "password")
-    msg = "Subject: Test message 01\n\n\Here is a test message from Cicero"
-    server.sendmail(
-        "fromemail",
-        "toemail",
-        msg
-    )
-    server.quit()
+# Send email
+@app.route("/send_password_reset", methods = ["POST"])
+def send_password_reset():
 
-    return "Mail sent"
-    '''
+    # Extract the email address from the POST request form
+    MAIL_RECIPIENT = request.form.get("email")
+
+    # Ensure username was submitted
+    if not MAIL_RECIPIENT:
+        return apology("must provide email", 403)
+        
+    # Check email is valid
+    if not email_check(MAIL_RECIPIENT):
+        return apology("not a valid email", 403)
+
+    # Query database for email
+    stmt = sqlalchemy.text("SELECT * FROM users WHERE email = :email")
+    try:
+        with db.connect() as conn:
+            rows = conn.execute(stmt, parameters={"email": MAIL_RECIPIENT}).fetchall()
+    except:
+        return apology("db access error", 400)
+    
+    # If the email matches with one account
+    if len(rows) == 1:
+
+        # Extract user_id from DB
+        USER_ID = rows[0][0]
+
+        # Set an expiration time for the reset code
+        expiration_time = datetime.utcnow() + timedelta(hours=2)
+        EXPIRATION_TS = expiration_time.strftime(ts_format)
+
+        # Generate encoded reset string
+        RESET_STRING = signing_key.dumps([USER_ID, EXPIRATION_TS])
+
+        # DB insert new password_reset row
+        try:
+            with db.connect() as conn:
+                stmt1 = sqlalchemy.text("INSERT INTO password_resets (user_id, expiration_ts, secret_key) VALUES (:user_id, :expiration_ts, :secret_key)")
+                conn.execute(stmt1, parameters={"user_id": USER_ID, "expiration_ts": EXPIRATION_TS, "secret_key": RESET_STRING})
+                conn.commit()
+        except:            
+            return apology("db insert error", 400)
+
+        # Send the password reset email
+        send_email_password_reset(MAIL_RECIPIENT, RESET_STRING)
+
+    return render_template("/password_reset_sent.html")
+
+@app.route("/password_reset/callback/<reset_string>")
+def password_reset_callback(reset_string):
+
+    # Extract variables from encoded string
+    decoded_list = signing_key.loads(reset_string)
+    USER_ID = decoded_list[0]
+    EXPIRATION_TS_STRING = decoded_list[1]
+    # Define time variables
+    EXPIRATION_TS = datetime.strptime(EXPIRATION_TS_STRING, ts_format)
+    CURRENT_TS = datetime.utcnow()
+
+    # Query database for matching password_reset string
+    stmt1 = sqlalchemy.text("SELECT * FROM password_resets WHERE secret_key = :secret_key")
+    try:
+        with db.connect() as conn:
+            rows = conn.execute(stmt1, parameters={"secret_key": reset_string}).fetchall()
+    except:
+        return apology("db access error", 400)
+    
+    # If no matching DB entry
+    if len(rows) != 1:
+        return apology("invalid link", 400)
+    
+    # If link is expired
+    if CURRENT_TS > EXPIRATION_TS:
+        return apology("link expired", 400)
+    
+    # Delete used row from DB
+    stmt2 = sqlalchemy.text("DELETE FROM password_resets WHERE secret_key = :secret_key")
+    try:
+        with db.connect() as conn:
+            rows = conn.execute(stmt2, parameters={"secret_key": reset_string})
+            conn.commit()
+    except:
+        return apology("db access error", 400)
+
+    # Allow user to reset password
+    return render_template("/password_reset_callback.html", user_id=USER_ID)
+
+@app.route("/password_reset_execution", methods = ["POST"])
+def password_reset_execution():
+
+    # Extract variables from POST request
+    new_pass_1 = request.form.get("password")
+    new_pass_2 = request.form.get("confirmation")
+    USER_ID = request.form.get("counter")
+
+    # Ensure new password was submitted and is confirmed
+    if not new_pass_1 or new_pass_1 != new_pass_2:
+        return apology("must provide two matching passwords", 403)
+
+    # Check new password is secure
+    check = password_check(new_pass_1)
+    if not check["password_ok"]:
+        return apology("password needs min 10 characters, 1 digit, 1 symbol, 1 lower and 1 uppercase letter", 403)
+
+    # Hash new password
+    hash = generate_password_hash(new_pass_1)
+
+    # Update DB record with new password
+    stmt = sqlalchemy.text("UPDATE users SET hash = :new_hash WHERE cicero_id = :id;")
+    try:
+        with db.connect() as conn:
+            conn.execute(stmt, parameters={"new_hash": hash, "id": USER_ID})
+            conn.commit()
+    except:
+        return apology("db access error", 400)
+
+    # Redirect to login page
+    return redirect(url_for("login"))
+    
+
