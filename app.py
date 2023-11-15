@@ -1,4 +1,3 @@
-import openai
 import os
 import sqlalchemy
 import requests
@@ -12,6 +11,7 @@ from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from itsdangerous import URLSafeSerializer
+from openai import OpenAI
 
 from helpers import apology, email_check, password_check, generate_email_password_reset, send_email_password_reset
 
@@ -20,13 +20,14 @@ load_dotenv()
 
 # SETUP: OpenAI
 # - Define variables
-openai.api_key = os.environ.get("OPENAI_API_KEY")
-openai.Model.list()
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+openai_client = OpenAI()
+openai_client.models.list()
 
 # Define function for calling the API with custom prompt
 def send_prompt(prompt):
-    return openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+    return openai_client.chat.completions.create(
+            model="gpt-4-1106-preview",
             messages=[
                 {"role": "system", "content": "You are Cicero, an experienced travel guide who has visited the whole world. Use a professional, but friendly tone."},
                 {"role": "user", "content": f"{prompt}"}
@@ -544,7 +545,7 @@ def stream():
         for line in send_prompt(prompt):
 
             # Extract text
-            bad_text = line.choices[0].delta.get("content", "")
+            bad_text = line.choices[0].delta.content
 
             # Convert text into HTML friendly
             text = bad_text.replace("\n", '<br>')
