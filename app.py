@@ -544,17 +544,20 @@ def stream():
         # For every partial API response
         for line in send_prompt(prompt):
 
-            # Extract text
-            bad_text = line.choices[0].delta.content
+            # Extract text from chunk
+            chunk_content = line.choices[0].delta.content 
+            
+            if chunk_content != None:
 
-            # Convert text into HTML friendly
-            text = bad_text.replace("\n", '<br>')
+                # Convert content into string
+                bad_text = str(chunk_content)
 
-            # Append to list of collected text
-            collected_text.append(text)
+                # Convert text into HTML friendly
+                text = bad_text.replace("\n", '<br>')
 
-            # If text is not empty > yield
-            if len(text):
+                # Append to list of collected text
+                collected_text.append(text)
+
                 yield text
 
         # Collect full API response in a single string
